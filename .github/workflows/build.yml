@@ -1,0 +1,96 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build for ${{ matrix.platform }}
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        platform: [win-x64, win-arm64]
+        include:
+          - platform: win-x64
+            artifact-name: DevToolInstaller-win-x64
+          - platform: win-arm64
+            artifact-name: DevToolInstaller-win-arm64
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build ${{ matrix.platform }}
+      run: |
+        dotnet publish -c Release -r ${{ matrix.platform }} --self-contained -o publish/${{ matrix.platform }} /p:PublishAot=true /p:StripSymbols=true
+
+    - name: Display build info
+      shell: pwsh
+      run: |
+        Write-Host "Build completed for ${{ matrix.platform }}" -ForegroundColor Green
+        if (Test-Path "publish/${{ matrix.platform }}/DevToolInstaller.exe") {
+          $fileInfo = Get-Item "publish/${{ matrix.platform }}/DevToolInstaller.exe"
+          $sizeMB = [math]::Round($fileInfo.Length / 1MB, 2)
+          Write-Host "Executable size: $sizeMB MB" -ForegroundColor Cyan
+        }
+
+    - name: Create artifact archive
+      shell: pwsh
+      run: |
+        $artifactPath = "publish/${{ matrix.platform }}"
+        $zipPath = "${{ matrix.artifact-name }}.zip"
+        Compress-Archive -Path "$artifactPath/*" -DestinationPath $zipPath
+        Write-Host "Created artifact: $zipPath" -ForegroundColor Green
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: ${{ matrix.artifact-name }}.zip
+        retention-days: 30
+
+  create-release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Display artifacts
+      run: |
+        echo "Downloaded artifacts:"
+        ls -R artifacts/
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/DevToolInstaller-win-x64/DevToolInstaller-win-x64.zip
+          artifacts/DevToolInstaller-win-arm64/DevToolInstaller-win-arm64.zip
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

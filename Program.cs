@@ -9,18 +9,10 @@ Console.WriteLine();
 // Check if running as administrator
 if (!ProcessHelper.IsAdministrator())
 {
-    ConsoleHelper.WriteWarning("This application should be run as Administrator for best results.");
-    ConsoleHelper.WriteWarning("Please right-click the executable and select 'Run as Administrator'.");
-    Console.WriteLine();
-    
-    Console.Write("Continue anyway? (y/n): ");
-    var response = Console.ReadLine();
-    if (response?.ToLower() != "y")
-    {
-        ConsoleHelper.WriteError("Setup cancelled.");
-        return 1;
-    }
-    Console.WriteLine();
+    ConsoleHelper.WriteWarning("This application requires Administrator privileges to install development tools.");
+    ConsoleHelper.WriteInfo("Requesting Administrator privileges...");
+    ProcessHelper.RestartAsAdministrator();
+    return 0; // This line won't be reached due to Environment.Exit in RestartAsAdministrator
 }
 
 // Define all installers

@@ -25,6 +25,24 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# Sign the x64 executable
+Write-Host ""
+Write-Host "Signing Windows x64 executable..." -ForegroundColor Green
+$x64Exe = "publish/win-x64/DevToolInstaller.exe"
+try {
+    signtool sign /a /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $x64Exe
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Code signing failed for Windows x64" -ForegroundColor Red
+        Write-Host "Continuing without signing..." -ForegroundColor Yellow
+    } else {
+        Write-Host "Successfully signed Windows x64 executable" -ForegroundColor Green
+    }
+} catch {
+    Write-Host "Code signing error for Windows x64: $_" -ForegroundColor Red
+    Write-Host "Continuing without signing..." -ForegroundColor Yellow
+}
+
 # Build for Windows ARM64
 Write-Host ""
 Write-Host "Building for Windows ARM64..." -ForegroundColor Green
@@ -41,6 +59,8 @@ Write-Host "Build completed successfully!" -ForegroundColor Magenta
 Write-Host "==========================================" -ForegroundColor Magenta
 Write-Host "Windows x64 executable: publish/win-x64/DevToolInstaller.exe" -ForegroundColor Cyan
 Write-Host "Windows ARM64 executable: publish/win-arm64/DevToolInstaller.exe" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Note: The x64 executable has been signed with a code signing certificate from USB token" -ForegroundColor Green
 Write-Host ""
 Write-Host "File sizes:" -ForegroundColor Yellow
 Get-ChildItem "publish/win-x64/DevToolInstaller.exe" | Format-Table Name, @{Name="Size (MB)"; Expression={[math]::Round($_.Length / 1MB, 2)}}

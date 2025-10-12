@@ -22,6 +22,30 @@ public static class ProcessHelper
         }
     }
 
+    public static void RestartAsAdministrator()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return;
+
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                UseShellExecute = true,
+                WorkingDirectory = Environment.CurrentDirectory,
+                FileName = Environment.ProcessPath,
+                Verb = "runas"
+            };
+
+            Process.Start(startInfo);
+            Environment.Exit(0);
+        }
+        catch (Exception ex)
+        {
+            ConsoleHelper.WriteError($"Failed to restart as administrator: {ex.Message}");
+        }
+    }
+
     public static bool IsToolInstalled(string commandName)
     {
         try

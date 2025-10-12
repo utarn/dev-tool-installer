@@ -1,19 +1,18 @@
 namespace DevToolInstaller.Installers;
 
-public class DotNetSdkInstaller : IInstaller
+public class PythonInstaller : IInstaller
 {
-    private const string DownloadUrl = "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.414/dotnet-sdk-8.0.414-win-x64.exe";
-    private const string InstallerFileName = "dotnet-sdk-8.0.414-win-x64.exe";
+    private const string DownloadUrl = "https://www.python.org/ftp/python/3.12.5/python-3.12.5-amd64.exe";
+    private const string InstallerFileName = "python-installer.exe";
 
-    public string Name => ".NET 8 SDK";
-    public DevelopmentCategory Category => DevelopmentCategory.CSharp;
-    public string Description => ".NET development framework for building modern applications";
+    public string Name => "Python";
+    public DevelopmentCategory Category => DevelopmentCategory.Python;
+    public string Description => "Python programming language interpreter and standard library";
     public List<string> Dependencies => new();
 
     public Task<bool> IsInstalledAsync()
     {
-        var output = ProcessHelper.GetCommandOutput("dotnet", "--info");
-        if (output != null && output.Contains("8.0."))
+        if (ProcessHelper.IsToolInstalled("python"))
         {
             ConsoleHelper.WriteWarning($"{Name} is already installed");
             return Task.FromResult(true);
@@ -33,7 +32,9 @@ public class DotNetSdkInstaller : IInstaller
             await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, cancellationToken);
 
             ConsoleHelper.WriteInfo($"Running {Name} installer...");
-            var success = ProcessHelper.ExecuteInstaller(installerPath, "/install /quiet /norestart");
+            // Install Python with pip and add to PATH
+            var arguments = "/quiet InstallAllUsers=1 PrependPath=1 Include_test=0";
+            var success = ProcessHelper.ExecuteInstaller(installerPath, arguments);
 
             if (File.Exists(installerPath))
             {

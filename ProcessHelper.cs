@@ -163,4 +163,32 @@ public static class ProcessHelper
             return null;
         }
     }
+
+    public static bool ExecuteCommand(string command, string arguments)
+    {
+        try
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = command,
+                    Arguments = arguments,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            process.WaitForExit();
+            return process.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            ConsoleHelper.WriteError($"Failed to execute command '{command} {arguments}': {ex.Message}");
+            return false;
+        }
+    }
 }

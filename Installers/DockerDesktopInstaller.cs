@@ -8,6 +8,9 @@ public class DockerDesktopInstaller : IInstaller
     private const string InstallerFileName = "DockerDesktopInstaller.exe";
 
     public string Name => "Docker Desktop";
+    public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
+    public string Description => "Container platform for developing, shipping, and running applications";
+    public List<string> Dependencies => new();
 
     public Task<bool> IsInstalledAsync()
     {

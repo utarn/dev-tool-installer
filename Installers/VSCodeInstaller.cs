@@ -5,7 +5,7 @@ public class VSCodeInstaller : IInstaller
     private const string DownloadUrl = "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user";
     private const string InstallerFileName = "VSCodeSetup.exe";
 
-    private static readonly string[] Extensions = 
+    private static readonly string[] Extensions =
     [
         "modelharbor.modelharbor-agent",
         "ms-dotnettools.vscode-dotnet-runtime",
@@ -17,6 +17,9 @@ public class VSCodeInstaller : IInstaller
     ];
 
     public string Name => "Visual Studio Code";
+    public DevelopmentCategory Category => DevelopmentCategory.CSharp;
+    public string Description => "Lightweight but powerful source code editor with extensive extension support";
+    public List<string> Dependencies => new();
 
     public Task<bool> IsInstalledAsync()
     {

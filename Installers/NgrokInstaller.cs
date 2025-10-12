@@ -6,6 +6,9 @@ public class NgrokInstaller : IInstaller
     private const string ZipFileName = "ngrok.zip";
 
     public string Name => "Ngrok";
+    public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
+    public string Description => "Secure tunneling service for exposing local services to the internet";
+    public List<string> Dependencies => new();
 
     public Task<bool> IsInstalledAsync()
     {

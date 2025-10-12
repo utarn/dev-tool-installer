@@ -6,6 +6,9 @@ public class PowerShell7Installer : IInstaller
     private const string InstallerFileName = "PowerShell7Setup.msi";
 
     public string Name => "PowerShell 7";
+    public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
+    public string Description => "Cross-platform automation and configuration tool/framework";
+    public List<string> Dependencies => new();
 
     public Task<bool> IsInstalledAsync()
     {

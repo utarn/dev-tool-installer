@@ -6,6 +6,9 @@ public class GitInstaller : IInstaller
     private const string InstallerFileName = "GitSetup.exe";
 
     public string Name => "Git";
+    public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
+    public string Description => "Distributed version control system for tracking changes in source code";
+    public List<string> Dependencies => new();
 
     public Task<bool> IsInstalledAsync()
     {

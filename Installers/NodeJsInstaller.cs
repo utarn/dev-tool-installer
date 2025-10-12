@@ -1,19 +1,18 @@
 namespace DevToolInstaller.Installers;
 
-public class DotNetSdkInstaller : IInstaller
+public class NodeJsInstaller : IInstaller
 {
-    private const string DownloadUrl = "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.414/dotnet-sdk-8.0.414-win-x64.exe";
-    private const string InstallerFileName = "dotnet-sdk-8.0.414-win-x64.exe";
+    private const string DownloadUrl = "https://nodejs.org/dist/v20.12.2/node-v20.12.2-x64.msi";
+    private const string InstallerFileName = "nodejs-installer.msi";
 
-    public string Name => ".NET 8 SDK";
-    public DevelopmentCategory Category => DevelopmentCategory.CSharp;
-    public string Description => ".NET development framework for building modern applications";
+    public string Name => "Node.js";
+    public DevelopmentCategory Category => DevelopmentCategory.NodeJS;
+    public string Description => "Node.js JavaScript runtime with npm included";
     public List<string> Dependencies => new();
 
     public Task<bool> IsInstalledAsync()
     {
-        var output = ProcessHelper.GetCommandOutput("dotnet", "--info");
-        if (output != null && output.Contains("8.0."))
+        if (ProcessHelper.IsToolInstalled("node"))
         {
             ConsoleHelper.WriteWarning($"{Name} is already installed");
             return Task.FromResult(true);
@@ -33,7 +32,7 @@ public class DotNetSdkInstaller : IInstaller
             await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, cancellationToken);
 
             ConsoleHelper.WriteInfo($"Running {Name} installer...");
-            var success = ProcessHelper.ExecuteInstaller(installerPath, "/install /quiet /norestart");
+            var success = ProcessHelper.ExecuteMsiInstaller(installerPath, "/quiet /norestart ADDLOCAL=ALL");
 
             if (File.Exists(installerPath))
             {

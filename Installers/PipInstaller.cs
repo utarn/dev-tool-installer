@@ -9,21 +9,29 @@ public class PipInstaller : IInstaller
 
     public async Task<bool> IsInstalledAsync()
     {
+        // Primary check: Check if pip is available by running python -m pip --version
         try
         {
-            // Check if pip is available by running pip --version
             var result = ProcessHelper.GetCommandOutput("python", "-m pip --version");
             if (!string.IsNullOrWhiteSpace(result))
             {
                 ConsoleHelper.WriteWarning($"{Name} is already installed");
                 return true;
             }
-            return false;
         }
         catch
         {
-            return false;
+            // Ignore exception, proceed to secondary check
         }
+        
+        // Secondary check: Check for pip executable in PATH (e.g., pip.exe)
+        if (await ProcessHelper.FindExecutableInPathAsync("pip.exe"))
+        {
+            ConsoleHelper.WriteWarning($"{Name} is already installed (via PATH check)");
+            return true;
+        }
+        
+        return false;
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)

@@ -10,14 +10,14 @@ public class PythonInstaller : IInstaller
     public string Description => "Python programming language interpreter and standard library";
     public List<string> Dependencies => new();
 
-    public Task<bool> IsInstalledAsync()
+    public async Task<bool> IsInstalledAsync()
     {
-        if (ProcessHelper.IsToolInstalled("python"))
+        if (await ProcessHelper.FindExecutableInPathAsync("python.exe") || ProcessHelper.IsToolInstalled("python"))
         {
             ConsoleHelper.WriteWarning($"{Name} is already installed");
-            return Task.FromResult(true);
+            return true;
         }
-        return Task.FromResult(false);
+        return false;
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)

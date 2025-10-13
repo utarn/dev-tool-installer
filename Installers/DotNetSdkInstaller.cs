@@ -10,15 +10,20 @@ public class DotNetSdkInstaller : IInstaller
     public string Description => ".NET development framework for building modern applications";
     public List<string> Dependencies => new();
 
-    public Task<bool> IsInstalledAsync()
+    public async Task<bool> IsInstalledAsync()
     {
+        if (!await ProcessHelper.FindExecutableInPathAsync("dotnet.exe"))
+        {
+            return false;
+        }
+        
         var output = ProcessHelper.GetCommandOutput("dotnet", "--info");
         if (output != null && output.Contains("8.0."))
         {
             ConsoleHelper.WriteWarning($"{Name} is already installed");
-            return Task.FromResult(true);
+            return true;
         }
-        return Task.FromResult(false);
+        return false;
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)

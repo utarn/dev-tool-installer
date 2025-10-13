@@ -10,14 +10,14 @@ public class NgrokInstaller : IInstaller
     public string Description => "Secure tunneling service for exposing local services to the internet";
     public List<string> Dependencies => new();
 
-    public Task<bool> IsInstalledAsync()
+    public async Task<bool> IsInstalledAsync()
     {
-        if (ProcessHelper.IsToolInstalled("ngrok"))
+        if (await ProcessHelper.FindExecutableInPathAsync("ngrok.exe") || ProcessHelper.IsToolInstalled("ngrok"))
         {
             ConsoleHelper.WriteWarning($"{Name} is already installed");
-            return Task.FromResult(true);
+            return true;
         }
-        return Task.FromResult(false);
+        return false;
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)

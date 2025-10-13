@@ -10,14 +10,14 @@ public class NodeJsInstaller : IInstaller
     public string Description => "Node.js JavaScript runtime with npm included";
     public List<string> Dependencies => new();
 
-    public Task<bool> IsInstalledAsync()
+    public async Task<bool> IsInstalledAsync()
     {
-        if (ProcessHelper.IsToolInstalled("node"))
+        if (await ProcessHelper.FindExecutableInPathAsync("node.exe") || ProcessHelper.IsToolInstalled("node"))
         {
             ConsoleHelper.WriteWarning($"{Name} is already installed");
-            return Task.FromResult(true);
+            return true;
         }
-        return Task.FromResult(false);
+        return false;
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)

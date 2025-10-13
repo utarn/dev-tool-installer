@@ -9,6 +9,11 @@ public class NpmInstaller : IInstaller
 
     public async Task<bool> IsInstalledAsync()
     {
+        if (!await ProcessHelper.FindExecutableInPathAsync("npm.cmd"))
+        {
+            return false;
+        }
+        
         try
         {
             // Check if npm is available by running npm --version

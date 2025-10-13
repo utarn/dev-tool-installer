@@ -1,5 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace DevToolInstaller;
 
@@ -44,6 +47,73 @@ public static class ProcessHelper
         {
             ConsoleHelper.WriteError($"Failed to restart as administrator: {ex.Message}");
         }
+    }
+
+    public static Task<bool> FindExecutableInPathAsync(string executableName)
+    {
+        if (string.IsNullOrWhiteSpace(executableName))
+        {
+            return Task.FromResult(false);
+        }
+
+        // 1. Check common installation directories (Windows specific paths)
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+            var commonPaths = new[]
+            {
+                programFiles,
+                programFilesX86,
+                Path.Combine(programFiles, "Git", "cmd"), // Common Git path
+                Path.Combine(programFiles, "nodejs"), // Common Node.js path
+                Path.Combine(localAppData, "Programs"),
+                Path.Combine(appData, "Local", "Programs"),
+                Path.Combine(appData, "npm"),
+                Path.Combine(localAppData, "Microsoft", "WindowsApps") // Windows Store apps path
+            };
+
+            foreach (var path in commonPaths.Where(Directory.Exists))
+            {
+                var fullPath = Path.Combine(path, executableName);
+                if (File.Exists(fullPath))
+                {
+                    return Task.FromResult(true);
+                }
+            }
+        }
+        
+        // 2. Check all directories listed in the system's PATH environment variable
+        var pathVariable = Environment.GetEnvironmentVariable("PATH");
+        if (!string.IsNullOrWhiteSpace(pathVariable))
+        {
+            var pathDirectories = pathVariable.Split(Path.PathSeparator);
+            foreach (var directory in pathDirectories.Where(Directory.Exists))
+            {
+                var fullPath = Path.Combine(directory, executableName);
+                
+                // Check for common executable extensions on Windows
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    var extensions = new[] { ".exe", ".cmd", ".bat" };
+                    if (extensions.Any(ext => File.Exists(fullPath + ext)))
+                    {
+                        return Task.FromResult(true);
+                    }
+                }
+                
+                // Check for exact match (works for Linux/macOS and Windows if extensionless)
+                if (File.Exists(fullPath))
+                {
+                    return Task.FromResult(true);
+                }
+            }
+        }
+
+        return Task.FromResult(false);
     }
 
     public static bool IsToolInstalled(string commandName)

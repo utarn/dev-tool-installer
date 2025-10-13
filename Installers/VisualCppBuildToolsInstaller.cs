@@ -10,7 +10,7 @@ public class VisualCppBuildToolsInstaller : IInstaller
     public string Description => "Microsoft Visual C++ Build Tools for compiling Python packages";
     public List<string> Dependencies => new();
 
-    public Task<bool> IsInstalledAsync()
+    public async Task<bool> IsInstalledAsync()
     {
         // Check if Visual C++ Build Tools are installed by looking for vcvarsall.bat
         var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
@@ -29,11 +29,11 @@ public class VisualCppBuildToolsInstaller : IInstaller
             if (File.Exists(path))
             {
                 ConsoleHelper.WriteWarning($"{Name} is already installed");
-                return Task.FromResult(true);
+                return true;
             }
         }
 
-        return Task.FromResult(false);
+        return false;
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)

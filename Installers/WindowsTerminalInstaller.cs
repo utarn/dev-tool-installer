@@ -7,7 +7,7 @@ public class WindowsTerminalInstaller : IInstaller
     public string Description => "Modern terminal application for Windows with tabs, panes, and Unicode support";
     public List<string> Dependencies => new();
 
-    public Task<bool> IsInstalledAsync()
+    public async Task<bool> IsInstalledAsync()
     {
         try
         {
@@ -17,14 +17,22 @@ public class WindowsTerminalInstaller : IInstaller
             if (!string.IsNullOrWhiteSpace(output))
             {
                 ConsoleHelper.WriteWarning($"{Name} is already installed (version: {output.Trim()})");
-                return Task.FromResult(true);
+                return true;
             }
         }
         catch
         {
             // Continue with installation
         }
-        return Task.FromResult(false);
+        
+        // Secondary check: check for wt.exe in PATH
+        if (await ProcessHelper.FindExecutableInPathAsync("wt.exe"))
+        {
+            ConsoleHelper.WriteWarning($"{Name} is already installed (via PATH check)");
+            return true;
+        }
+        
+        return false;
     }
 
     public Task<bool> InstallAsync(CancellationToken cancellationToken = default)

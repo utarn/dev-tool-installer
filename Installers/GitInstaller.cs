@@ -10,14 +10,14 @@ public class GitInstaller : IInstaller
     public string Description => "Distributed version control system for tracking changes in source code";
     public List<string> Dependencies => new();
 
-    public Task<bool> IsInstalledAsync()
+    public async Task<bool> IsInstalledAsync()
     {
-        if (ProcessHelper.IsToolInstalled("git"))
+        if (await ProcessHelper.FindExecutableInPathAsync("git.exe") || ProcessHelper.IsToolInstalled("git"))
         {
             ConsoleHelper.WriteWarning($"{Name} is already installed");
-            return Task.FromResult(true);
+            return true;
         }
-        return Task.FromResult(false);
+        return false;
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)

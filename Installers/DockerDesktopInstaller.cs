@@ -12,14 +12,14 @@ public class DockerDesktopInstaller : IInstaller
     public string Description => "Container platform for developing, shipping, and running applications";
     public List<string> Dependencies => new();
 
-    public Task<bool> IsInstalledAsync()
+    public async Task<bool> IsInstalledAsync()
     {
-        if (ProcessHelper.IsToolInstalled("docker"))
+        if (await ProcessHelper.FindExecutableInPathAsync("docker.exe") || ProcessHelper.IsToolInstalled("docker"))
         {
             ConsoleHelper.WriteWarning($"{Name} is already installed");
-            return Task.FromResult(true);
+            return true;
         }
-        return Task.FromResult(false);
+        return false;
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)

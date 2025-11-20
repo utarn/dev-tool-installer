@@ -11,6 +11,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Application icon and version -->
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>2025.11.11.0</Version>
+    <AssemblyVersion>2025.11.11.0</AssemblyVersion>
+    <FileVersion>2025.11.11.0</FileVersion>
   </PropertyGroup>
 
 </Project>

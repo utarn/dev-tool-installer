@@ -14,6 +14,30 @@ public class MenuSystem : IDisposable
     
     public async Task RunAsync()
     {
+        // Check if we're in a non-interactive environment
+        bool isNonInteractive = false;
+        try
+        {
+            var _ = Console.WindowWidth; // Test console access
+            var __ = Console.KeyAvailable; // Test console input
+        }
+        catch (IOException)
+        {
+            isNonInteractive = true;
+        }
+        catch (InvalidOperationException)
+        {
+            isNonInteractive = true;
+        }
+
+        if (isNonInteractive)
+        {
+            ConsoleHelper.WriteError("This application requires an interactive console environment.");
+            ConsoleHelper.WriteError("Console operations are not available in the current environment.");
+            await Task.Delay(3000);
+            return;
+        }
+
         ConsoleHelper.ClearScreen();
         
         while (CurrentState != MenuState.Complete)
@@ -27,7 +51,16 @@ public class MenuSystem : IDisposable
             {
                 ConsoleHelper.WriteError($"Error: {ex.Message}");
                 ConsoleHelper.WriteInfo("Press any key to continue...");
-                Console.ReadKey(true);
+                try
+                {
+                    Console.ReadKey(true);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Handle cases where console input is not available (e.g., running in non-interactive environment)
+                    // Wait a moment instead of reading a key
+                    System.Threading.Thread.Sleep(2000);
+                }
             }
         }
     }
@@ -55,10 +88,23 @@ public class MenuSystem : IDisposable
         _currentOptions = ToolRegistry.GetMainMenuOptions();
         SelectedIndex = Math.Min(SelectedIndex, _currentOptions.Count - 1);
         
-        var width = Math.Min(80, Console.WindowWidth - 4);
-        var height = Math.Min(20, Console.WindowHeight - 4);
-        var startX = Math.Max(0, (Console.WindowWidth - width) / 2);
-        var startY = Math.Max(0, (Console.WindowHeight - height) / 2);
+        int windowWidth, windowHeight;
+        try
+        {
+            windowWidth = Console.WindowWidth;
+            windowHeight = Console.WindowHeight;
+        }
+        catch (IOException)
+        {
+            // Fallback dimensions when console properties are not available
+            windowWidth = 80;
+            windowHeight = 24;
+        }
+        
+        var width = Math.Min(80, windowWidth - 4);
+        var height = Math.Min(20, windowHeight - 4);
+        var startX = Math.Max(0, (windowWidth - width) / 2);
+        var startY = Math.Max(0, (windowHeight - height) / 2);
         
         ConsoleHelper.DrawBorderedBox(startX, startY, width, height, "DevToolInstaller v2.0");
         
@@ -93,10 +139,23 @@ public class MenuSystem : IDisposable
         
         SelectedIndex = Math.Min(SelectedIndex, _currentOptions.Count - 1);
         
-        var width = Math.Min(80, Console.WindowWidth - 4);
-        var height = Math.Min(20, Console.WindowHeight - 4);
-        var startX = Math.Max(0, (Console.WindowWidth - width) / 2);
-        var startY = Math.Max(0, (Console.WindowHeight - height) / 2);
+        int windowWidth, windowHeight;
+        try
+        {
+            windowWidth = Console.WindowWidth;
+            windowHeight = Console.WindowHeight;
+        }
+        catch (IOException)
+        {
+            // Fallback dimensions when console properties are not available
+            windowWidth = 80;
+            windowHeight = 24;
+        }
+        
+        var width = Math.Min(80, windowWidth - 4);
+        var height = Math.Min(20, windowHeight - 4);
+        var startX = Math.Max(0, (windowWidth - width) / 2);
+        var startY = Math.Max(0, (windowHeight - height) / 2);
         
         var categoryTitle = _currentCategory.Value switch
         {
@@ -135,18 +194,31 @@ public class MenuSystem : IDisposable
             return;
         }
         
-        var width = Math.Min(80, Console.WindowWidth - 4);
-        var height = 12;
-        var startX = Math.Max(0, (Console.WindowWidth - width) / 2);
-        var startY = Math.Max(0, (Console.WindowHeight - height) / 2);
+        int windowWidth, windowHeight;
+        try
+        {
+            windowWidth = Console.WindowWidth;
+            windowHeight = Console.WindowHeight;
+        }
+        catch (IOException)
+        {
+            // Fallback dimensions when console properties are not available
+            windowWidth = 80;
+            windowHeight = 24;
+        }
         
+        var width = Math.Min(80, windowWidth - 4);
+        var height = 14;
+        var startX = Math.Max(0, (windowWidth - width) / 2);
+        var startY = Math.Max(0, (windowHeight - height) / 2);
+
         ConsoleHelper.DrawBorderedBox(startX, startY, width, height, $"Installing: {_currentInstaller.Name}");
         
         ConsoleHelper.SetCursorPosition(startX + 2, startY + 3);
         ConsoleHelper.WriteInfo("Installing...");
         
-        ConsoleHelper.SetCursorPosition(startX + 2, startY + 5);
-        ConsoleHelper.DrawProgressBar(0, 100, width - 4);
+        ConsoleHelper.SetCursorPosition(startX + 24, startY + 4);
+        ConsoleHelper.DrawProgressBar(0, 100, width - 26);
         
         var progressReporter = new MenuProgressReporter(startX, startY, width);
         progressReporter.ReportStatus("Preparing installation...");
@@ -159,34 +231,66 @@ public class MenuSystem : IDisposable
             {
                 progressReporter.ReportSuccess("Installation completed successfully!");
                 
-                ConsoleHelper.SetCursorPosition(startX + 2, startY + 10);
+                ConsoleHelper.SetCursorPosition(startX + 2, startY + 12);
                 ConsoleHelper.WriteInfo("Press any key to continue...");
-                Console.ReadKey(true);
+                try
+                {
+                    Console.ReadKey(true);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Handle cases where console input is not available
+                    await Task.Delay(2000);
+                }
             }
             else
             {
                 progressReporter.ReportError("Installation failed!");
                 
-                ConsoleHelper.SetCursorPosition(startX + 2, startY + 10);
+                ConsoleHelper.SetCursorPosition(startX + 2, startY + 12);
                 ConsoleHelper.WriteInfo("Press any key to continue...");
-                Console.ReadKey(true);
+                try
+                {
+                    Console.ReadKey(true);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Handle cases where console input is not available
+                    await Task.Delay(2000);
+                }
             }
         }
         catch (OperationCanceledException)
         {
             progressReporter.ReportWarning("Installation cancelled!");
             
-            ConsoleHelper.SetCursorPosition(startX + 2, startY + 10);
+            ConsoleHelper.SetCursorPosition(startX + 2, startY + 12);
             ConsoleHelper.WriteInfo("Press any key to continue...");
-            Console.ReadKey(true);
+            try
+            {
+                Console.ReadKey(true);
+            }
+            catch (InvalidOperationException)
+            {
+                // Handle cases where console input is not available
+                await Task.Delay(2000);
+            }
         }
         catch (Exception ex)
         {
             progressReporter.ReportError($"Error - {ex.Message}");
             
-            ConsoleHelper.SetCursorPosition(startX + 2, startY + 10);
+            ConsoleHelper.SetCursorPosition(startX + 2, startY + 12);
             ConsoleHelper.WriteInfo("Press any key to continue...");
-            Console.ReadKey(true);
+            try
+            {
+                Console.ReadKey(true);
+            }
+            catch (InvalidOperationException)
+            {
+                // Handle cases where console input is not available
+                await Task.Delay(2000);
+            }
         }
         
         // Go back to category menu after installation
@@ -202,7 +306,20 @@ public class MenuSystem : IDisposable
 
     private async Task HandleInputAsync()
     {
-        var key = Console.ReadKey(true);
+        ConsoleKeyInfo key;
+        try
+        {
+            key = Console.ReadKey(true);
+        }
+        catch (InvalidOperationException)
+        {
+            // Handle cases where console input is not available (e.g., running in non-interactive environment)
+            // Exit gracefully since we can't handle interactive input
+            CurrentState = MenuState.Complete;
+            ConsoleHelper.WriteError("Console input not available. Exiting...");
+            await Task.Delay(2000);
+            return;
+        }
         
         switch (key.Key)
         {
@@ -287,7 +404,15 @@ public class MenuSystem : IDisposable
                         ConsoleHelper.WriteError($"Dependency not met: '{depName}' is not installed.");
                         ConsoleHelper.WriteInfo($"Please install '{depName}' before proceeding.");
                         ConsoleHelper.WriteInfo("Press any key to continue...");
-                        Console.ReadKey(true);
+                        try
+                        {
+                            Console.ReadKey(true);
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            // Handle cases where console input is not available
+                            await Task.Delay(2000);
+                        }
                         return;
                     }
                 }

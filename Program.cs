@@ -12,7 +12,15 @@ if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
     ConsoleHelper.WriteError($"Current OS: {Environment.OSVersion.VersionString}");
     ConsoleHelper.WriteError($"Current Architecture: {RuntimeInformation.OSArchitecture}");
     Console.WriteLine("Press any key to exit...");
-    Console.ReadKey();
+    try
+    {
+        Console.ReadKey();
+    }
+    catch (InvalidOperationException)
+    {
+        // Handle cases where console input is not available
+        System.Threading.Thread.Sleep(2000);
+    }
     Environment.Exit(1);
 }
 

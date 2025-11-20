@@ -58,8 +58,17 @@ public static class ConsoleHelper
     {
         lock (_lock)
         {
-            Console.Write("\r" + new string(' ', Console.WindowWidth - 1));
-            Console.Write("\r");
+            try
+            {
+                Console.Write("\r" + new string(' ', Console.WindowWidth - 1));
+                Console.Write("\r");
+            }
+            catch (IOException)
+            {
+                // Fallback when console window properties are not available
+                Console.Write("\r" + new string(' ', 80 - 1));
+                Console.Write("\r");
+            }
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.Write(message);
             Console.ResetColor();
@@ -70,8 +79,17 @@ public static class ConsoleHelper
     {
         lock (_lock)
         {
-            Console.Write("\r" + new string(' ', Console.WindowWidth - 1));
-            Console.Write("\r");
+            try
+            {
+                Console.Write("\r" + new string(' ', Console.WindowWidth - 1));
+                Console.Write("\r");
+            }
+            catch (IOException)
+            {
+                // Fallback when console window properties are not available
+                Console.Write("\r" + new string(' ', 80 - 1));
+                Console.Write("\r");
+            }
         }
     }
 
@@ -157,13 +175,25 @@ public static class ConsoleHelper
     {
         lock (_lock)
         {
-            var currentTop = Console.CursorTop;
-            for (int i = 0; i < height; i++)
+            try
             {
-                Console.SetCursorPosition(0, startLine + i);
-                Console.Write(new string(' ', Console.WindowWidth));
+                var currentTop = Console.CursorTop;
+                for (int i = 0; i < height; i++)
+                {
+                    Console.SetCursorPosition(0, startLine + i);
+                    Console.Write(new string(' ', Console.WindowWidth));
+                }
+                Console.SetCursorPosition(0, startLine);
             }
-            Console.SetCursorPosition(0, startLine);
+            catch (IOException)
+            {
+                // Fallback when console operations are not available
+                // Just write newlines to move past the area
+                for (int i = 0; i < height; i++)
+                {
+                    Console.WriteLine(new string(' ', 80));
+                }
+            }
         }
     }
 
@@ -242,7 +272,16 @@ public static class ConsoleHelper
     {
         lock (_lock)
         {
-            Console.Clear();
+            try
+            {
+                Console.Clear();
+            }
+            catch (IOException)
+            {
+                // Handle cases where console is not available (e.g., running in non-interactive environment)
+                // Write newlines to simulate clearing the screen
+                Console.WriteLine(new string('\n', 50));
+            }
         }
     }
 }

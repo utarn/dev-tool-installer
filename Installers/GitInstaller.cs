@@ -2,7 +2,7 @@ namespace DevToolInstaller.Installers;
 
 public class GitInstaller : IInstaller
 {
-    private const string DownloadUrl = "https://github.com/git-for-windows/git/releases/download/v2.46.0.windows.1/Git-2.46.0-64-bit.exe";
+    private const string DownloadUrl = "https://github.com/git-for-windows/git/releases/download/v2.52.0.windows.1/Git-2.52.0-64-bit.exe";
     private const string InstallerFileName = "GitSetup.exe";
 
     public string Name => "Git";

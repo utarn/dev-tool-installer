@@ -6,7 +6,6 @@ public static class ToolRegistry
 {
     private static readonly List<IInstaller> _allInstallers = new()
     {
-        new DotNetSdkInstaller(),
         new DotNetSdk10Installer(),
         new VSCodeInstaller(),
         new GitInstaller(),

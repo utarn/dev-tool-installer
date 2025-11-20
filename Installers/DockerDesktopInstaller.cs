@@ -22,9 +22,9 @@ public class DockerDesktopInstaller : IInstaller
         return false;
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing Docker Desktop...");
 
         var tempPath = Path.GetTempPath();
         var installerPath = Path.Combine(tempPath, InstallerFileName);
@@ -34,24 +34,33 @@ public class DockerDesktopInstaller : IInstaller
             // Try winget first
             if (await ProcessHelper.FindExecutableInPathAsync("winget"))
             {
-                ConsoleHelper.WriteInfo($"Installing {Name} via winget...");
+                progressReporter?.ReportStatus("Installing Docker Desktop via winget...");
+                progressReporter?.ReportProgress(20);
                 var output = await ProcessHelper.GetCommandOutput("winget",
                     "install --id=Docker.DockerDesktop -e --source=winget --accept-source-agreements --accept-package-agreements --force");
 
                 if (output != null)
                 {
-                    await ConfigureDockerAsync();
-                    ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                    progressReporter?.ReportStatus("Configuring Docker Desktop...");
+                    progressReporter?.ReportProgress(70);
+                    await ConfigureDockerAsync(progressReporter);
+                    progressReporter?.ReportProgress(100);
+                    progressReporter?.ReportSuccess("Docker Desktop installation completed successfully!");
                     return true;
                 }
             }
 
             // Fallback to direct download
-            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, cancellationToken);
+            progressReporter?.ReportStatus("Downloading Docker Desktop installer...");
+            progressReporter?.ReportProgress(30);
+            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, progressReporter, cancellationToken);
 
-            ConsoleHelper.WriteInfo($"Running {Name} installer...");
+            progressReporter?.ReportStatus("Running Docker Desktop installer...");
+            progressReporter?.ReportProgress(60);
             var success = ProcessHelper.ExecuteInstaller(installerPath, "install --quiet");
 
+            progressReporter?.ReportStatus("Cleaning up...");
+            progressReporter?.ReportProgress(70);
             if (File.Exists(installerPath))
             {
                 File.Delete(installerPath);
@@ -59,29 +68,32 @@ public class DockerDesktopInstaller : IInstaller
 
             if (success)
             {
-                await ConfigureDockerAsync();
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                progressReporter?.ReportStatus("Configuring Docker Desktop...");
+                progressReporter?.ReportProgress(80);
+                await ConfigureDockerAsync(progressReporter);
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("Docker Desktop installation completed successfully!");
                 return true;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError("Docker Desktop installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install Docker Desktop: {ex.Message}");
             return false;
         }
     }
 
-    private async Task ConfigureDockerAsync()
+    private async Task ConfigureDockerAsync(IProgressReporter? progressReporter = null)
     {
         try
         {
             // Configure Docker Desktop settings
-            ConsoleHelper.WriteInfo("Configuring Docker Desktop settings...");
+            progressReporter?.ReportStatus("Configuring Docker Desktop settings...");
             
             var settingsPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -104,7 +116,7 @@ public class DockerDesktopInstaller : IInstaller
                 var updatedJson = JsonSerializer.Serialize(settings, DockerSettingsContext.Default.DictionaryStringObject);
                 await File.WriteAllTextAsync(settingsPath, updatedJson);
                 
-                ConsoleHelper.WriteSuccess("Docker Desktop settings configured.");
+                progressReporter?.ReportSuccess("Docker Desktop settings configured.");
             }
 
             // Enable Docker Desktop to start on Windows boot
@@ -116,19 +128,19 @@ public class DockerDesktopInstaller : IInstaller
             {
                 await ProcessHelper.GetCommandOutput("reg",
                     $"add \"HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" /v \"Docker Desktop\" /t REG_SZ /d \"\\\"{dockerPath}\\\"\" /f");
-                ConsoleHelper.WriteSuccess("Docker Desktop will start on boot.");
+                progressReporter?.ReportSuccess("Docker Desktop will start on boot.");
             }
 
             // Start Docker Desktop
-            ConsoleHelper.WriteInfo("Starting Docker Desktop...");
+            progressReporter?.ReportStatus("Starting Docker Desktop...");
             if (File.Exists(dockerPath))
             {
                 ProcessHelper.ExecuteInstaller(dockerPath, "--minimized", false);
-                ConsoleHelper.WriteSuccess("Docker Desktop started (minimized).");
+                progressReporter?.ReportSuccess("Docker Desktop started (minimized).");
             }
 
             // Wait for Docker to be ready
-            ConsoleHelper.WriteInfo("Waiting for Docker to be ready...");
+            progressReporter?.ReportStatus("Waiting for Docker to be ready...");
             var maxRetries = 10;
             var dockerReady = false;
             
@@ -145,18 +157,18 @@ public class DockerDesktopInstaller : IInstaller
             if (dockerReady)
             {
                 // Pull pgvector image
-                ConsoleHelper.WriteInfo("Pulling pgvector/pgvector:pg17 image...");
+                progressReporter?.ReportStatus("Pulling pgvector/pgvector:pg17 image...");
                 await ProcessHelper.GetCommandOutput("docker", "pull pgvector/pgvector:pg17");
-                ConsoleHelper.WriteSuccess("Image pgvector/pgvector:pg17 pulled successfully.");
+                progressReporter?.ReportSuccess("Image pgvector/pgvector:pg17 pulled successfully.");
             }
             else
             {
-                ConsoleHelper.WriteWarning("Docker did not start within expected time. Skipping image pull.");
+                progressReporter?.ReportWarning("Docker did not start within expected time. Skipping image pull.");
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteWarning($"Failed to configure Docker Desktop: {ex.Message}");
+            progressReporter?.ReportWarning($"Failed to configure Docker Desktop: {ex.Message}");
         }
     }
 }

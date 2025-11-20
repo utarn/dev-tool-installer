@@ -26,20 +26,25 @@ public class VSCodeInstaller : IInstaller
         return await ProcessHelper.FindExecutableInPathAsync("code.exe") || ProcessHelper.IsToolInstalled("code");
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing Visual Studio Code...");
 
         var tempPath = Path.GetTempPath();
         var installerPath = Path.Combine(tempPath, InstallerFileName);
 
         try
         {
-            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, cancellationToken);
+            progressReporter?.ReportStatus("Downloading VS Code installer...");
+            progressReporter?.ReportProgress(10);
+            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, progressReporter, cancellationToken);
 
-            ConsoleHelper.WriteInfo($"Running {Name} installer...");
+            progressReporter?.ReportStatus("Running VS Code installer...");
+            progressReporter?.ReportProgress(50);
             var success = ProcessHelper.ExecuteInstaller(installerPath, "/VERYSILENT /NORESTART /MERGETASKS=!runcode");
 
+            progressReporter?.ReportStatus("Cleaning up...");
+            progressReporter?.ReportProgress(80);
             if (File.Exists(installerPath))
             {
                 File.Delete(installerPath);
@@ -47,44 +52,50 @@ public class VSCodeInstaller : IInstaller
 
             if (success)
             {
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
-                
+                progressReporter?.ReportStatus("Installing extensions...");
+                progressReporter?.ReportProgress(90);
                 // Install extensions
-                await InstallExtensionsAsync();
+                await InstallExtensionsAsync(progressReporter);
                 
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("Visual Studio Code installation completed successfully!");
                 return true;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError("Visual Studio Code installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install Visual Studio Code: {ex.Message}");
             return false;
         }
     }
 
-    private async Task InstallExtensionsAsync()
+    private async Task InstallExtensionsAsync(IProgressReporter? progressReporter = null)
     {
-        ConsoleHelper.WriteInfo("Installing VS Code extensions...");
+        progressReporter?.ReportStatus("Installing VS Code extensions...");
         
-        foreach (var extension in Extensions)
+        var totalExtensions = Extensions.Length;
+        for (int i = 0; i < totalExtensions; i++)
         {
+            var extension = Extensions[i];
             try
             {
-                ConsoleHelper.WriteInfo($"Installing extension: {extension}");
+                progressReporter?.ReportStatus($"Installing extension: {extension}");
+                var progress = 90 + (i * 10 / totalExtensions);
+                progressReporter?.ReportProgress(progress);
                 await ProcessHelper.GetCommandOutput("code", $"--install-extension {extension}");
                 await Task.Delay(1000); // Brief delay between installations
             }
             catch (Exception ex)
             {
-                ConsoleHelper.WriteWarning($"Failed to install extension {extension}: {ex.Message}");
+                progressReporter?.ReportWarning($"Failed to install extension {extension}: {ex.Message}");
             }
         }
         
-        ConsoleHelper.WriteSuccess("VS Code extensions installation completed!");
+        progressReporter?.ReportSuccess("VS Code extensions installation completed!");
     }
 }

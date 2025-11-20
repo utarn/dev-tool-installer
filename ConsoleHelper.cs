@@ -79,12 +79,12 @@ public static class ConsoleHelper
     {
         lock (_lock)
         {
-            Console.WriteLine("┌" + new string('─', width - 2) + "┐");
+            Console.WriteLine("+" + new string('-', width - 2) + "+");
             for (int i = 0; i < height - 2; i++)
             {
-                Console.WriteLine("│" + new string(' ', width - 2) + "│");
+                Console.WriteLine("|" + new string(' ', width - 2) + "|");
             }
-            Console.WriteLine("└" + new string('─', width - 2) + "┘");
+            Console.WriteLine("+" + new string('-', width - 2) + "+");
         }
     }
 
@@ -96,11 +96,11 @@ public static class ConsoleHelper
             {
                 Console.BackgroundColor = ConsoleColor.Blue;
                 Console.ForegroundColor = ConsoleColor.White;
-                Console.Write($"▶ {text}");
+                Console.Write($"> {text}");
                 if (isInstalled)
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.Write(" ✓");
+                    Console.Write(" (installed)");
                 }
                 Console.ResetColor();
             }
@@ -110,7 +110,7 @@ public static class ConsoleHelper
                 if (isInstalled)
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.Write(" ✓");
+                    Console.Write(" (installed)");
                     Console.ResetColor();
                 }
             }
@@ -128,9 +128,9 @@ public static class ConsoleHelper
             
             Console.Write("[");
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write(new string('█', filledWidth));
+            Console.Write(new string('#', filledWidth));
             Console.ResetColor();
-            Console.Write(new string('░', emptyWidth));
+            Console.Write(new string(' ', emptyWidth));
             Console.Write($"] {percentage}%");
         }
     }
@@ -142,7 +142,7 @@ public static class ConsoleHelper
             if (isInstalled)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write("✓");
+                Console.Write("(installed)");
             }
             else
             {
@@ -206,32 +206,32 @@ public static class ConsoleHelper
             SetCursorPosition(x, y);
             
             // Top border
-            Console.Write("┌");
+            Console.Write("+");
             if (!string.IsNullOrEmpty(title))
             {
                 var titlePadding = Math.Max(0, width - title.Length - 4);
                 var leftPadding = titlePadding / 2;
                 var rightPadding = titlePadding - leftPadding;
-                Console.Write(new string('─', leftPadding));
+                Console.Write(new string('-', leftPadding));
                 Console.Write($" {title} ");
-                Console.Write(new string('─', rightPadding));
+                Console.Write(new string('-', rightPadding));
             }
             else
             {
-                Console.Write(new string('─', width - 2));
+                Console.Write(new string('-', width - 2));
             }
-            Console.WriteLine("┐");
+            Console.WriteLine("+");
             
             // Middle section
             for (int i = 1; i < height - 1; i++)
             {
                 SetCursorPosition(x, y + i);
-                Console.WriteLine("│" + new string(' ', width - 2) + "│");
+                Console.WriteLine("|" + new string(' ', width - 2) + "|");
             }
             
             // Bottom border
             SetCursorPosition(x, y + height - 1);
-            Console.WriteLine("└" + new string('─', width - 2) + "┘");
+            Console.WriteLine("+" + new string('-', width - 2) + "+");
             
             // Restore cursor position
             SetCursorPosition(originalCursorLeft, originalCursorTop);

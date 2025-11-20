@@ -32,39 +32,42 @@ public class PipInstaller : IInstaller
         return false;
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing Pip...");
 
         try
         {
             // First try to ensure pip is installed
-            ConsoleHelper.WriteInfo("Ensuring pip is installed...");
+            progressReporter?.ReportStatus("Ensuring pip is installed...");
+            progressReporter?.ReportProgress(20);
             var ensureSuccess = await ProcessHelper.ExecuteCommand("python", "-m ensurepip --default-pip");
-            
+             
             if (!ensureSuccess)
             {
-                ConsoleHelper.WriteWarning("ensurepip failed, trying alternative installation method...");
+                progressReporter?.ReportWarning("ensurepip failed, trying alternative installation method...");
             }
 
             // Upgrade pip to the latest version
-            ConsoleHelper.WriteInfo("Upgrading pip to the latest version...");
+            progressReporter?.ReportStatus("Upgrading pip to the latest version...");
+            progressReporter?.ReportProgress(60);
             var upgradeSuccess = await ProcessHelper.ExecuteCommand("python", "-m pip install --upgrade pip");
 
             if (upgradeSuccess)
             {
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("Pip installation completed successfully!");
                 return true;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError("Pip installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install Pip: {ex.Message}");
             return false;
         }
     }

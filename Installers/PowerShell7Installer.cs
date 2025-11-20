@@ -20,9 +20,9 @@ public class PowerShell7Installer : IInstaller
         return false;
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing PowerShell 7...");
 
         var tempPath = Path.GetTempPath();
         var installerPath = Path.Combine(tempPath, InstallerFileName);
@@ -32,23 +32,30 @@ public class PowerShell7Installer : IInstaller
             // Try winget first
             if (ProcessHelper.IsToolInstalled("winget"))
             {
-                ConsoleHelper.WriteInfo($"Installing {Name} via winget...");
+                progressReporter?.ReportStatus("Installing PowerShell 7 via winget...");
+                progressReporter?.ReportProgress(20);
                 var output = ProcessHelper.GetCommandOutput("winget",
                     "install --id=Microsoft.PowerShell -e --source=winget --accept-source-agreements --accept-package-agreements --force");
 
                 if (output != null)
                 {
-                    ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                    progressReporter?.ReportProgress(100);
+                    progressReporter?.ReportSuccess("PowerShell 7 installation completed successfully!");
                     return true;
                 }
             }
 
             // Fallback to direct download
-            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, cancellationToken);
+            progressReporter?.ReportStatus("Downloading PowerShell 7 installer...");
+            progressReporter?.ReportProgress(30);
+            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, progressReporter, cancellationToken);
 
-            ConsoleHelper.WriteInfo($"Running {Name} installer...");
+            progressReporter?.ReportStatus("Running PowerShell 7 installer...");
+            progressReporter?.ReportProgress(70);
             var success = ProcessHelper.ExecuteMsiInstaller(installerPath);
 
+            progressReporter?.ReportStatus("Cleaning up...");
+            progressReporter?.ReportProgress(90);
             if (File.Exists(installerPath))
             {
                 File.Delete(installerPath);
@@ -56,18 +63,19 @@ public class PowerShell7Installer : IInstaller
 
             if (success)
             {
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("PowerShell 7 installation completed successfully!");
                 return true;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError("PowerShell 7 installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install PowerShell 7: {ex.Message}");
             return false;
         }
     }

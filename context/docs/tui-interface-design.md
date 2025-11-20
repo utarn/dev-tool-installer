@@ -62,21 +62,21 @@ The menu system will use a state-based approach with the following states:
 ### Visual Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    DevToolInstaller v2.0                        │
-│                Development Environment Setup                    │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Select Development Environment:                                │
-│                                                                 │
-│  ▶ C# Development                                               │
-│    Python Development                                           │
-│    Node.js Development                                          │
-│    Cross-Platform Tools                                         │
-│                                                                 │
-│  [↑↓ Navigate] [Enter Select] [Esc Exit]                        │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
++-----------------------------------------------------------------+
+|                    DevToolInstaller v2.0                        |
+|                Development Environment Setup                    |
++-----------------------------------------------------------------+
+|                                                                 |
+|  Select Development Environment:                                |
+|                                                                 |
+|  > C# Development                                               |
+|    Python Development                                           |
+|    Node.js Development                                          |
+|    Cross-Platform Tools                                         |
+|                                                                 |
+|  [↑↓ Navigate] [Enter Select] [Esc Exit]                        |
+|                                                                 |
++-----------------------------------------------------------------+
 ```
 
 ### Color Scheme
@@ -93,20 +93,20 @@ The menu system will use a state-based approach with the following states:
 
 ### Interactive Elements
 
-1. **Selection Indicator**: `▶` for currently selected item
+1. **Selection Indicator**: `>` for currently selected item
 2. **Navigation Keys**: Displayed at bottom of each menu
 3. **Progress Bars**: Visual progress during downloads/installation
-4. **Status Indicators**: ✓ for installed, ✗ for failed, ↓ for downloading
+4. **Status Indicators**: (installed) for installed, ✗ for failed, ↓ for downloading
 
 ### Progress Display
 
 ```
 Installing: .NET 8 SDK
-┌─────────────────────────────────────────────────────────────────┐
-│ Downloading: [████████████████████████████████████████] 100%    │
-│ Installing: [████████████████░░░░░░░░░░░░░░░░░░░░░░░░░] 60%     │
-│ Status: Configuring development environment...                   │
-└─────────────────────────────────────────────────────────────────┘
++-----------------------------------------------------------------+
+| Downloading: [####################] 100%                        |
+| Installing: [##############      ] 60%                         |
+| Status: Configuring development environment...                   |
++-----------------------------------------------------------------+
 ```
 
 ## Technical Implementation Plan

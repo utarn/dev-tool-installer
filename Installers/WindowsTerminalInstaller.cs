@@ -33,36 +33,38 @@ public class WindowsTerminalInstaller : IInstaller
         return false;
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing Windows Terminal...");
 
         try
         {
             if (await ProcessHelper.FindExecutableInPathAsync("winget"))
             {
-                ConsoleHelper.WriteInfo($"Installing {Name} via winget...");
+                progressReporter?.ReportStatus("Installing Windows Terminal via winget...");
+                progressReporter?.ReportProgress(30);
                 var output = await ProcessHelper.GetCommandOutput("winget",
                     "install --id=Microsoft.WindowsTerminal -e --source=winget --accept-source-agreements --accept-package-agreements --force");
-                
+                 
                 if (output != null)
                 {
-                    ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                    progressReporter?.ReportProgress(100);
+                    progressReporter?.ReportSuccess("Windows Terminal installation completed successfully!");
                     return true;
                 }
             }
             else
             {
-                ConsoleHelper.WriteWarning("winget not found. Please install Windows Terminal manually from the Microsoft Store.");
+                progressReporter?.ReportWarning("winget not found. Please install Windows Terminal manually from Microsoft Store.");
                 return false;
             }
 
-            ConsoleHelper.WriteError($"{Name} installation failed");
+            progressReporter?.ReportError("Windows Terminal installation failed");
             return false;
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install Windows Terminal: {ex.Message}");
             return false;
         }
     }

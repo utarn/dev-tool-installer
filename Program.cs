@@ -16,7 +16,58 @@ if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
     Environment.Exit(1);
 }
 
+// Check and install winget if needed
+await EnsureWingetInstalledAsync();
+
 Console.Title = "DevToolInstaller";
 
 using var menuSystem = new MenuSystem();
 await menuSystem.RunAsync();
+
+static async Task EnsureWingetInstalledAsync()
+{
+    if (await ProcessHelper.FindExecutableInPathAsync("winget"))
+    {
+        return; // winget is already installed
+    }
+
+    ConsoleHelper.WriteInfo("winget not found. Installing winget...");
+    
+    try
+    {
+        // Download and install winget
+        var wingetUrl = "https://aka.ms/getwinget";
+        var tempPath = Path.GetTempPath();
+        var wingetInstaller = Path.Combine(tempPath, "winget.msixbundle");
+        
+        await DownloadManager.DownloadFileAsync(wingetUrl, wingetInstaller, "winget");
+        
+        var success = ProcessHelper.ExecuteInstaller(wingetInstaller, "/quiet");
+        
+        if (success)
+        {
+            ConsoleHelper.WriteSuccess("winget installed successfully!");
+            
+            // Refresh environment variables to make winget available
+            ProcessHelper.RefreshEnvironmentVariables();
+            
+            // Wait a moment for the installation to complete
+            await Task.Delay(2000);
+        }
+        else
+        {
+            ConsoleHelper.WriteWarning("Failed to install winget. Some installers may not work properly.");
+        }
+        
+        // Clean up
+        if (File.Exists(wingetInstaller))
+        {
+            File.Delete(wingetInstaller);
+        }
+    }
+    catch (Exception ex)
+    {
+        ConsoleHelper.WriteError($"Failed to install winget: {ex.Message}");
+        ConsoleHelper.WriteWarning("Some installers may not work properly without winget.");
+    }
+}

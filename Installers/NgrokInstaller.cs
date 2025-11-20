@@ -20,9 +20,9 @@ public class NgrokInstaller : IInstaller
         return false;
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing Ngrok...");
 
         var tempPath = Path.GetTempPath();
         var zipPath = Path.Combine(tempPath, ZipFileName);
@@ -32,25 +32,30 @@ public class NgrokInstaller : IInstaller
             // Try winget first
             if (ProcessHelper.IsToolInstalled("winget"))
             {
-                ConsoleHelper.WriteInfo($"Installing {Name} via winget...");
+                progressReporter?.ReportStatus("Installing Ngrok via winget...");
+                progressReporter?.ReportProgress(30);
                 var output = ProcessHelper.GetCommandOutput("winget",
                     "install --id=ngrok.ngrok -e --source=winget --accept-source-agreements --accept-package-agreements --force");
 
                 if (output != null)
                 {
-                    ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                    progressReporter?.ReportProgress(100);
+                    progressReporter?.ReportSuccess("Ngrok installation completed successfully!");
                     return true;
                 }
             }
 
             // Fallback to direct download and extract
-            await DownloadManager.DownloadFileAsync(DownloadUrl, zipPath, Name, cancellationToken);
+            progressReporter?.ReportStatus("Downloading Ngrok...");
+            progressReporter?.ReportProgress(10);
+            await DownloadManager.DownloadFileAsync(DownloadUrl, zipPath, Name, progressReporter, cancellationToken);
 
             var extractPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "ngrok");
 
-            ConsoleHelper.WriteInfo($"Extracting {Name}...");
+            progressReporter?.ReportStatus("Extracting Ngrok...");
+            progressReporter?.ReportProgress(60);
             
             if (!Directory.Exists(extractPath))
             {
@@ -59,25 +64,30 @@ public class NgrokInstaller : IInstaller
 
             System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, extractPath, true);
 
+            progressReporter?.ReportStatus("Cleaning up...");
+            progressReporter?.ReportProgress(80);
             if (File.Exists(zipPath))
             {
                 File.Delete(zipPath);
             }
 
             // Add to PATH for current session
+            progressReporter?.ReportStatus("Adding to PATH...");
+            progressReporter?.ReportProgress(90);
             var currentPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
             if (!currentPath.Contains(extractPath))
             {
                 Environment.SetEnvironmentVariable("PATH", $"{currentPath};{extractPath}", EnvironmentVariableTarget.User);
-                ConsoleHelper.WriteInfo($"Added {extractPath} to user PATH");
+                progressReporter?.ReportSuccess($"Added {extractPath} to user PATH");
             }
 
-            ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+            progressReporter?.ReportProgress(100);
+            progressReporter?.ReportSuccess("Ngrok installation completed successfully!");
             return true;
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install Ngrok: {ex.Message}");
             return false;
         }
     }

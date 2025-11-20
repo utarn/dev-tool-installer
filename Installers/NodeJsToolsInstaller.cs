@@ -34,9 +34,9 @@ public class NodeJsToolsInstaller : IInstaller
         return true;
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing Node.js Development Tools...");
 
         try
         {
@@ -45,7 +45,7 @@ public class NodeJsToolsInstaller : IInstaller
 
             foreach (var (toolName, description) in _tools)
             {
-                ConsoleHelper.WriteInfo($"Checking {toolName}...");
+                progressReporter?.ReportStatus($"Checking {toolName}...");
                 
                 // Check if tool is already installed
                 var result = await ProcessHelper.GetCommandOutput("npm", $"list -g {toolName}");
@@ -55,39 +55,42 @@ public class NodeJsToolsInstaller : IInstaller
                     continue;
                 }
 
-                ConsoleHelper.WriteInfo($"Installing {toolName}: {description}");
+                var progress = 10 + (installedCount * 80 / totalCount);
+                progressReporter?.ReportStatus($"Installing {toolName}: {description}");
+                progressReporter?.ReportProgress(progress);
                 var success = await ProcessHelper.ExecuteCommand("npm", $"install -g {toolName}");
                 
                 if (success)
                 {
-                    ConsoleHelper.WriteSuccess($"{toolName} installed successfully");
+                    progressReporter?.ReportSuccess($"{toolName} installed successfully");
                     installedCount++;
                 }
                 else
                 {
-                    ConsoleHelper.WriteError($"Failed to install {toolName}");
+                    progressReporter?.ReportError($"Failed to install {toolName}");
                 }
             }
 
             if (installedCount == totalCount)
             {
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("Node.js Development Tools installation completed successfully!");
                 return true;
             }
             else if (installedCount > 0)
             {
-                ConsoleHelper.WriteWarning($"{Name} partially installed: {installedCount}/{totalCount} tools installed");
+                progressReporter?.ReportWarning($"Node.js Development Tools partially installed: {installedCount}/{totalCount} tools installed");
                 return false;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError("Node.js Development Tools installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install Node.js Development Tools: {ex.Message}");
             return false;
         }
     }

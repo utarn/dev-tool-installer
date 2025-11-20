@@ -21,11 +21,16 @@ public class DownloadManager
 
     public static async Task<string> DownloadFileAsync(string url, string destinationPath, string displayName, CancellationToken cancellationToken = default)
     {
+        return await DownloadFileAsync(url, destinationPath, displayName, null, cancellationToken);
+    }
+
+    public static async Task<string> DownloadFileAsync(string url, string destinationPath, string displayName, IProgressReporter? progressReporter, CancellationToken cancellationToken = default)
+    {
         var stopwatch = Stopwatch.StartNew();
         
         try
         {
-            ConsoleHelper.WriteInfo($"Downloading {displayName}...");
+            progressReporter?.ReportStatus($"Downloading {displayName}...");
             
             using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -55,19 +60,41 @@ public class DownloadManager
                         var downloadedMB = totalRead / 1024.0 / 1024.0;
                         var totalMB = totalBytes / 1024.0 / 1024.0;
                         
-                        ConsoleHelper.WriteProgress($"Progress: {currentPercentage}% ({downloadedMB:F2} MB / {totalMB:F2} MB) - Speed: {speedMBps:F2} MB/s");
+                        if (progressReporter != null)
+                        {
+                            var status = $"Downloading {displayName}: {currentPercentage}% ({downloadedMB:F2} MB / {totalMB:F2} MB) - Speed: {speedMBps:F2} MB/s";
+                            progressReporter.ReportProgress(status, currentPercentage);
+                        }
+                        else
+                        {
+                            ConsoleHelper.WriteProgress($"Progress: {currentPercentage}% ({downloadedMB:F2} MB / {totalMB:F2} MB) - Speed: {speedMBps:F2} MB/s");
+                        }
                     }
                 }
             }
             
             stopwatch.Stop();
-            ConsoleHelper.WriteSuccess($"{displayName} downloaded successfully in {stopwatch.Elapsed.TotalSeconds:F2}s");
+            if (progressReporter != null)
+            {
+                progressReporter.ReportSuccess($"{displayName} downloaded successfully in {stopwatch.Elapsed.TotalSeconds:F2}s");
+            }
+            else
+            {
+                ConsoleHelper.WriteSuccess($"{displayName} downloaded successfully in {stopwatch.Elapsed.TotalSeconds:F2}s");
+            }
             
             return destinationPath;
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to download {displayName}: {ex.Message}");
+            if (progressReporter != null)
+            {
+                progressReporter.ReportError($"Failed to download {displayName}: {ex.Message}");
+            }
+            else
+            {
+                ConsoleHelper.WriteError($"Failed to download {displayName}: {ex.Message}");
+            }
             throw;
         }
     }

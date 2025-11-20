@@ -17,33 +17,39 @@ public class PoetryInstaller : IInstaller
         return false;
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing Poetry...");
 
         try
         {
             // Ensure pip is up to date
+            progressReporter?.ReportStatus("Updating pip...");
+            progressReporter?.ReportProgress(10);
             await ProcessHelper.ExecuteCommand("python", "-m pip install --upgrade pip");
             
-            ConsoleHelper.WriteInfo($"Installing {Name} using pip...");
+            progressReporter?.ReportStatus("Installing Poetry using pip...");
+            progressReporter?.ReportProgress(30);
             var success = await ProcessHelper.ExecuteCommand("pip", "install poetry");
 
             if (success)
             {
+                progressReporter?.ReportStatus("Refreshing environment variables...");
+                progressReporter?.ReportProgress(90);
                 ProcessHelper.RefreshEnvironmentVariables();
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("Poetry installation completed successfully!");
                 return true;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError("Poetry installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install Poetry: {ex.Message}");
             return false;
         }
     }

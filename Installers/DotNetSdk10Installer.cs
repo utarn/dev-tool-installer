@@ -46,20 +46,25 @@ public class DotNetSdk10Installer : IInstaller
         return false;
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing .NET 10 SDK...");
 
         var tempPath = Path.GetTempPath();
         var installerPath = Path.Combine(tempPath, InstallerFileName);
 
         try
         {
-            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, cancellationToken);
+            progressReporter?.ReportStatus("Downloading .NET 10 SDK installer...");
+            progressReporter?.ReportProgress(10);
+            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, progressReporter, cancellationToken);
 
-            ConsoleHelper.WriteInfo($"Running {Name} installer...");
+            progressReporter?.ReportStatus("Running .NET 10 SDK installer...");
+            progressReporter?.ReportProgress(50);
             var success = ProcessHelper.ExecuteInstaller(installerPath, "/quiet /norestart");
 
+            progressReporter?.ReportStatus("Cleaning up...");
+            progressReporter?.ReportProgress(90);
             if (File.Exists(installerPath))
             {
                 File.Delete(installerPath);
@@ -67,19 +72,22 @@ public class DotNetSdk10Installer : IInstaller
 
             if (success)
             {
+                progressReporter?.ReportStatus("Refreshing environment variables...");
+                progressReporter?.ReportProgress(95);
                 ProcessHelper.RefreshEnvironmentVariables();
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess(".NET 10 SDK installation completed successfully!");
                 return true;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError(".NET 10 SDK installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install .NET 10 SDK: {ex.Message}");
             return false;
         }
     }

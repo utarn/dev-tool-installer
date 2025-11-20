@@ -20,22 +20,27 @@ public class PythonInstaller : IInstaller
         return false;
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing Python...");
 
         var tempPath = Path.GetTempPath();
         var installerPath = Path.Combine(tempPath, InstallerFileName);
 
         try
         {
-            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, cancellationToken);
+            progressReporter?.ReportStatus("Downloading Python installer...");
+            progressReporter?.ReportProgress(10);
+            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, progressReporter, cancellationToken);
 
-            ConsoleHelper.WriteInfo($"Running {Name} installer...");
+            progressReporter?.ReportStatus("Running Python installer...");
+            progressReporter?.ReportProgress(50);
             // Install Python with pip and add to PATH
             var arguments = "/quiet InstallAllUsers=1 PrependPath=1 Include_test=0";
             var success = ProcessHelper.ExecuteInstaller(installerPath, arguments);
 
+            progressReporter?.ReportStatus("Cleaning up...");
+            progressReporter?.ReportProgress(90);
             if (File.Exists(installerPath))
             {
                 File.Delete(installerPath);
@@ -43,18 +48,19 @@ public class PythonInstaller : IInstaller
 
             if (success)
             {
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("Python installation completed successfully!");
                 return true;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError("Python installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install Python: {ex.Message}");
             return false;
         }
     }

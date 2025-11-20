@@ -12,32 +12,36 @@ public class NpmInstaller : IInstaller
         return await ProcessHelper.FindExecutableInPathAsync("npm.cmd");
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing NPM...");
 
         try
         {
             // Update npm to the latest version
-            ConsoleHelper.WriteInfo("Updating npm to the latest version...");
+            progressReporter?.ReportStatus("Updating npm to the latest version...");
+            progressReporter?.ReportProgress(20);
             
             var success = await ProcessHelper.ExecuteCommand("npm", "install -g npm@latest");
 
             if (success)
             {
+                progressReporter?.ReportStatus("Refreshing environment variables...");
+                progressReporter?.ReportProgress(80);
                 ProcessHelper.RefreshEnvironmentVariables();
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("NPM installation completed successfully!");
                 return true;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError("NPM installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install NPM: {ex.Message}");
             return false;
         }
     }

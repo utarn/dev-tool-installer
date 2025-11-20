@@ -36,22 +36,27 @@ public class VisualCppBuildToolsInstaller : IInstaller
         return false;
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing Visual C++ Build Tools...");
 
         var tempPath = Path.GetTempPath();
         var installerPath = Path.Combine(tempPath, InstallerFileName);
 
         try
         {
-            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, cancellationToken);
+            progressReporter?.ReportStatus("Downloading Visual C++ Build Tools installer...");
+            progressReporter?.ReportProgress(10);
+            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, progressReporter, cancellationToken);
 
-            ConsoleHelper.WriteInfo($"Running {Name} installer...");
-            // Install the C++ build tools workload with default components
+            progressReporter?.ReportStatus("Running Visual C++ Build Tools installer...");
+            progressReporter?.ReportProgress(30);
+            // Install C++ build tools workload with default components
             var arguments = "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended";
             var success = ProcessHelper.ExecuteInstaller(installerPath, arguments);
 
+            progressReporter?.ReportStatus("Cleaning up...");
+            progressReporter?.ReportProgress(90);
             if (File.Exists(installerPath))
             {
                 File.Delete(installerPath);
@@ -59,18 +64,19 @@ public class VisualCppBuildToolsInstaller : IInstaller
 
             if (success)
             {
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("Visual C++ Build Tools installation completed successfully!");
                 return true;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError("Visual C++ Build Tools installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install Visual C++ Build Tools: {ex.Message}");
             return false;
         }
     }

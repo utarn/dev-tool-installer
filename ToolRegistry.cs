@@ -18,9 +18,12 @@ public static class ToolRegistry
         new PipInstaller(),
         new PoetryInstaller(),
         new VisualCppBuildToolsInstaller(),
-        new NodeJsInstaller(),
+        new NodeJs20Installer(),
+        new NodeJs22Installer(),
         new NpmInstaller(),
-        new NodeJsToolsInstaller()
+        new NodeJsToolsInstaller(),
+        new FlowiseInstaller(),
+        new PostgreSQLInstaller()
     };
 
     public static async Task<List<MenuOption>> GetAllToolsAsync()

@@ -136,7 +136,7 @@ public class MenuSystem : IDisposable
         }
         
         var width = Math.Min(80, Console.WindowWidth - 4);
-        var height = 10;
+        var height = 12;
         var startX = Math.Max(0, (Console.WindowWidth - width) / 2);
         var startY = Math.Max(0, (Console.WindowHeight - height) / 2);
         
@@ -148,51 +148,43 @@ public class MenuSystem : IDisposable
         ConsoleHelper.SetCursorPosition(startX + 2, startY + 5);
         ConsoleHelper.DrawProgressBar(0, 100, width - 4);
         
-        ConsoleHelper.SetCursorPosition(startX + 2, startY + 7);
-        ConsoleHelper.WriteInfo("Status: Preparing installation...");
+        var progressReporter = new MenuProgressReporter(startX, startY, width);
+        progressReporter.ReportStatus("Preparing installation...");
         
         try
         {
-            var success = await _currentInstaller.InstallAsync(_cancellationTokenSource.Token);
+            var success = await _currentInstaller.InstallAsync(progressReporter, _cancellationTokenSource.Token);
             
             if (success)
             {
-                ConsoleHelper.SetCursorPosition(startX + 2, startY + 7);
-                ConsoleHelper.ClearCurrentLine();
-                ConsoleHelper.WriteSuccess("Status: Installation completed successfully!");
+                progressReporter.ReportSuccess("Installation completed successfully!");
                 
-                ConsoleHelper.SetCursorPosition(startX + 2, startY + 8);
+                ConsoleHelper.SetCursorPosition(startX + 2, startY + 10);
                 ConsoleHelper.WriteInfo("Press any key to continue...");
                 Console.ReadKey(true);
             }
             else
             {
-                ConsoleHelper.SetCursorPosition(startX + 2, startY + 7);
-                ConsoleHelper.ClearCurrentLine();
-                ConsoleHelper.WriteError("Status: Installation failed!");
+                progressReporter.ReportError("Installation failed!");
                 
-                ConsoleHelper.SetCursorPosition(startX + 2, startY + 8);
+                ConsoleHelper.SetCursorPosition(startX + 2, startY + 10);
                 ConsoleHelper.WriteInfo("Press any key to continue...");
                 Console.ReadKey(true);
             }
         }
         catch (OperationCanceledException)
         {
-            ConsoleHelper.SetCursorPosition(startX + 2, startY + 7);
-            ConsoleHelper.ClearCurrentLine();
-            ConsoleHelper.WriteWarning("Status: Installation cancelled!");
+            progressReporter.ReportWarning("Installation cancelled!");
             
-            ConsoleHelper.SetCursorPosition(startX + 2, startY + 8);
+            ConsoleHelper.SetCursorPosition(startX + 2, startY + 10);
             ConsoleHelper.WriteInfo("Press any key to continue...");
             Console.ReadKey(true);
         }
         catch (Exception ex)
         {
-            ConsoleHelper.SetCursorPosition(startX + 2, startY + 7);
-            ConsoleHelper.ClearCurrentLine();
-            ConsoleHelper.WriteError($"Status: Error - {ex.Message}");
+            progressReporter.ReportError($"Error - {ex.Message}");
             
-            ConsoleHelper.SetCursorPosition(startX + 2, startY + 8);
+            ConsoleHelper.SetCursorPosition(startX + 2, startY + 10);
             ConsoleHelper.WriteInfo("Press any key to continue...");
             Console.ReadKey(true);
         }

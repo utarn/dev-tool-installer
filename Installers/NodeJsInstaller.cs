@@ -16,20 +16,25 @@ public class NodeJsInstaller : IInstaller
                await ProcessHelper.FindExecutableInPathAsync("npm.cmd");
     }
 
-    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        ConsoleHelper.WriteInfo($"Installing {Name}...");
+        progressReporter?.ReportStatus("Installing Node.js...");
 
         var tempPath = Path.GetTempPath();
         var installerPath = Path.Combine(tempPath, InstallerFileName);
 
         try
         {
-            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, cancellationToken);
+            progressReporter?.ReportStatus("Downloading Node.js installer...");
+            progressReporter?.ReportProgress(10);
+            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, progressReporter, cancellationToken);
 
-            ConsoleHelper.WriteInfo($"Running {Name} installer...");
+            progressReporter?.ReportStatus("Running Node.js installer...");
+            progressReporter?.ReportProgress(50);
             var success = ProcessHelper.ExecuteMsiInstaller(installerPath, "/quiet /norestart ADDLOCAL=ALL");
 
+            progressReporter?.ReportStatus("Cleaning up...");
+            progressReporter?.ReportProgress(90);
             if (File.Exists(installerPath))
             {
                 File.Delete(installerPath);
@@ -37,19 +42,22 @@ public class NodeJsInstaller : IInstaller
 
             if (success)
             {
+                progressReporter?.ReportStatus("Refreshing environment variables...");
+                progressReporter?.ReportProgress(95);
                 ProcessHelper.RefreshEnvironmentVariables();
-                ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("Node.js installation completed successfully!");
                 return true;
             }
             else
             {
-                ConsoleHelper.WriteError($"{Name} installation failed");
+                progressReporter?.ReportError("Node.js installation failed");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
+            progressReporter?.ReportError($"Failed to install Node.js: {ex.Message}");
             return false;
         }
     }

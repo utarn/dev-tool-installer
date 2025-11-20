@@ -7,5 +7,5 @@ public interface IInstaller
     string Description { get; }
     List<string> Dependencies { get; }
     Task<bool> IsInstalledAsync();
-    Task<bool> InstallAsync(CancellationToken cancellationToken = default);
+    Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default);
 }

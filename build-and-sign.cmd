@@ -28,7 +28,7 @@ mkdir "%OUTPUT_DIR%"
 
 echo.
 echo Publishing the application...
-dotnet publish -r %RID% -c Release --self-contained true /p:PublishSingleFile=true /p:PublishAot=true -o "%OUTPUT_DIR%"
+dotnet publish -r %RID% -c Release --self-contained true /p:PublishSingleFile=true /p:PublishAot=true /p:PublishTrimmed=true -o "%OUTPUT_DIR%"
 
 if %errorlevel% neq 0 (
     echo.

@@ -23,12 +23,7 @@ public class VSCodeInstaller : IInstaller
 
     public async Task<bool> IsInstalledAsync()
     {
-        if (await ProcessHelper.FindExecutableInPathAsync("code.exe") || ProcessHelper.IsToolInstalled("code"))
-        {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
-            return true;
-        }
-        return false;
+        return await ProcessHelper.FindExecutableInPathAsync("code.exe") || ProcessHelper.IsToolInstalled("code");
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
@@ -81,7 +76,7 @@ public class VSCodeInstaller : IInstaller
             try
             {
                 ConsoleHelper.WriteInfo($"Installing extension: {extension}");
-                ProcessHelper.GetCommandOutput("code", $"--install-extension {extension}");
+                await ProcessHelper.GetCommandOutput("code", $"--install-extension {extension}");
                 await Task.Delay(1000); // Brief delay between installations
             }
             catch (Exception ex)

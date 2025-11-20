@@ -38,10 +38,9 @@ public class DotNetSdk10Installer : IInstaller
             return false;
         }
 
-        var output = ProcessHelper.GetCommandOutput("dotnet", "--list-sdks");
+        var output = await ProcessHelper.GetCommandOutput("dotnet", "--list-sdks");
         if (output != null && output.Contains("10.0."))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
         return false;

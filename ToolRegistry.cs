@@ -7,6 +7,7 @@ public static class ToolRegistry
     private static readonly List<IInstaller> _allInstallers = new()
     {
         new DotNetSdkInstaller(),
+        new DotNetSdk10Installer(),
         new VSCodeInstaller(),
         new GitInstaller(),
         new WindowsTerminalInstaller(),
@@ -15,6 +16,7 @@ public static class ToolRegistry
         new NgrokInstaller(),
         new PythonInstaller(),
         new PipInstaller(),
+        new PoetryInstaller(),
         new VisualCppBuildToolsInstaller(),
         new NodeJsInstaller(),
         new NpmInstaller(),

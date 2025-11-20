@@ -12,12 +12,8 @@ public class NodeJsInstaller : IInstaller
 
     public async Task<bool> IsInstalledAsync()
     {
-        if (await ProcessHelper.FindExecutableInPathAsync("node.exe") || ProcessHelper.IsToolInstalled("node"))
-        {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
-            return true;
-        }
-        return false;
+        return await ProcessHelper.FindExecutableInPathAsync("node.exe") && 
+               await ProcessHelper.FindExecutableInPathAsync("npm.cmd");
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
@@ -41,6 +37,7 @@ public class NodeJsInstaller : IInstaller
 
             if (success)
             {
+                ProcessHelper.RefreshEnvironmentVariables();
                 ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
                 return true;
             }

@@ -12,34 +12,49 @@ public class GitInstaller : IInstaller
 
     public async Task<bool> IsInstalledAsync()
     {
-        if (await ProcessHelper.FindExecutableInPathAsync("git.exe") || ProcessHelper.IsToolInstalled("git"))
-        {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
-            return true;
-        }
-        return false;
+        return await ProcessHelper.FindExecutableInPathAsync("git.exe");
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
     {
         ConsoleHelper.WriteInfo($"Installing {Name}...");
 
-        var tempPath = Path.GetTempPath();
-        var installerPath = Path.Combine(tempPath, InstallerFileName);
-
         try
         {
+            if (await ProcessHelper.FindExecutableInPathAsync("winget"))
+            {
+                ConsoleHelper.WriteInfo($"Installing {Name} via winget...");
+                var success = await ProcessHelper.ExecuteCommand("winget",
+                    "install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements");
+                
+                if (success)
+                {
+                    ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
+                    return true;
+                }
+                else
+                {
+                    ConsoleHelper.WriteError($"{Name} installation failed via winget");
+                    // Fallback to direct download if winget fails
+                }
+            }
+
+            // Fallback to direct download and install
+            ConsoleHelper.WriteInfo("Downloading Git installer...");
+            var tempPath = Path.GetTempPath();
+            var installerPath = Path.Combine(tempPath, InstallerFileName);
+
             await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, cancellationToken);
 
             ConsoleHelper.WriteInfo($"Running {Name} installer...");
-            var success = ProcessHelper.ExecuteInstaller(installerPath, "/VERYSILENT /NORESTART");
+            var successDirect = ProcessHelper.ExecuteInstaller(installerPath, "/VERYSILENT /NORESTART");
 
             if (File.Exists(installerPath))
             {
                 File.Delete(installerPath);
             }
 
-            if (success)
+            if (successDirect)
             {
                 ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
                 return true;

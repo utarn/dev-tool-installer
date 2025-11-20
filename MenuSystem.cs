@@ -1,3 +1,4 @@
+using System.Linq;
 namespace DevToolInstaller;
 
 public class MenuSystem : IDisposable
@@ -41,7 +42,7 @@ public class MenuSystem : IDisposable
                 RenderMainMenu();
                 break;
             case MenuState.CategoryMenu:
-                await RenderCategoryMenuAsync();
+                RenderCategoryMenu();
                 break;
             case MenuState.Installing:
                 await RenderInstallationProgressAsync();
@@ -82,7 +83,7 @@ public class MenuSystem : IDisposable
         ConsoleHelper.ShowHelpText(helpText);
     }
 
-    private async Task RenderCategoryMenuAsync()
+    private void RenderCategoryMenu()
     {
         if (!_currentCategory.HasValue)
         {
@@ -90,7 +91,6 @@ public class MenuSystem : IDisposable
             return;
         }
         
-        _currentOptions = await ToolRegistry.GetToolsByCategoryAsync(_currentCategory.Value);
         SelectedIndex = Math.Min(SelectedIndex, _currentOptions.Count - 1);
         
         var width = Math.Min(80, Console.WindowWidth - 4);
@@ -221,7 +221,7 @@ public class MenuSystem : IDisposable
                 NavigateDown();
                 break;
             case ConsoleKey.Enter:
-                SelectCurrentItem();
+                await SelectCurrentItem();
                 break;
             case ConsoleKey.Escape:
                 GoBack();
@@ -249,7 +249,7 @@ public class MenuSystem : IDisposable
         }
     }
 
-    private void SelectCurrentItem()
+    private async Task SelectCurrentItem()
     {
         if (SelectedIndex < 0 || SelectedIndex >= _currentOptions.Count)
             return;
@@ -264,19 +264,48 @@ public class MenuSystem : IDisposable
                     StateHistory.Push(CurrentState);
                     CurrentState = MenuState.CategoryMenu;
                     _currentCategory = selectedOption.Category.Value;
+                    _currentOptions = await ToolRegistry.GetToolsByCategoryAsync(_currentCategory.Value);
                     SelectedIndex = 0;
                 }
                 break;
             case MenuState.CategoryMenu:
                 if (selectedOption.Installer != null)
                 {
-                    StateHistory.Push(CurrentState);
-                    CurrentState = MenuState.Installing;
-                    _currentInstaller = selectedOption.Installer;
-                    SelectedIndex = 0;
+                    await InitiateInstallation(selectedOption.Installer);
                 }
                 break;
         }
+    }
+    
+    private async Task InitiateInstallation(IInstaller installer)
+    {
+        if (installer.Dependencies.Any())
+        {
+            foreach (var depName in installer.Dependencies)
+            {
+                var depInstaller = ToolRegistry.GetInstallerByName(depName);
+                if (depInstaller != null)
+                {
+                    // Here we're not passing the silent flag, so it might print warnings.
+                    // This is a known issue with the current implementation of IsInstalledAsync.
+                    var isInstalled = await depInstaller.IsInstalledAsync();
+                    if (!isInstalled)
+                    {
+                        ConsoleHelper.ClearScreen();
+                        ConsoleHelper.WriteError($"Dependency not met: '{depName}' is not installed.");
+                        ConsoleHelper.WriteInfo($"Please install '{depName}' before proceeding.");
+                        ConsoleHelper.WriteInfo("Press any key to continue...");
+                        Console.ReadKey(true);
+                        return;
+                    }
+                }
+            }
+        }
+
+        StateHistory.Push(CurrentState);
+        CurrentState = MenuState.Installing;
+        _currentInstaller = installer;
+        SelectedIndex = 0;
     }
 
     private void GoBack()

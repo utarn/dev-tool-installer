@@ -11,12 +11,11 @@ public class WindowsTerminalInstaller : IInstaller
     {
         try
         {
-            var output = ProcessHelper.GetCommandOutput("powershell",
+            var output = await ProcessHelper.GetCommandOutput("powershell",
                 "-Command \"Get-AppxPackage -Name 'Microsoft.WindowsTerminal' | Select-Object -ExpandProperty Version\"");
             
             if (!string.IsNullOrWhiteSpace(output))
             {
-                ConsoleHelper.WriteWarning($"{Name} is already installed (version: {output.Trim()})");
                 return true;
             }
         }
@@ -28,44 +27,43 @@ public class WindowsTerminalInstaller : IInstaller
         // Secondary check: check for wt.exe in PATH
         if (await ProcessHelper.FindExecutableInPathAsync("wt.exe"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed (via PATH check)");
             return true;
         }
         
         return false;
     }
 
-    public Task<bool> InstallAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
     {
         ConsoleHelper.WriteInfo($"Installing {Name}...");
 
         try
         {
-            if (ProcessHelper.IsToolInstalled("winget"))
+            if (await ProcessHelper.FindExecutableInPathAsync("winget"))
             {
                 ConsoleHelper.WriteInfo($"Installing {Name} via winget...");
-                var output = ProcessHelper.GetCommandOutput("winget",
+                var output = await ProcessHelper.GetCommandOutput("winget",
                     "install --id=Microsoft.WindowsTerminal -e --source=winget --accept-source-agreements --accept-package-agreements --force");
                 
                 if (output != null)
                 {
                     ConsoleHelper.WriteSuccess($"{Name} installation completed successfully!");
-                    return Task.FromResult(true);
+                    return true;
                 }
             }
             else
             {
                 ConsoleHelper.WriteWarning("winget not found. Please install Windows Terminal manually from the Microsoft Store.");
-                return Task.FromResult(false);
+                return false;
             }
 
             ConsoleHelper.WriteError($"{Name} installation failed");
-            return Task.FromResult(false);
+            return false;
         }
         catch (Exception ex)
         {
             ConsoleHelper.WriteError($"Failed to install {Name}: {ex.Message}");
-            return Task.FromResult(false);
+            return false;
         }
     }
 }

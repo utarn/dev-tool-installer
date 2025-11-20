@@ -32,10 +32,10 @@ public class DockerDesktopInstaller : IInstaller
         try
         {
             // Try winget first
-            if (ProcessHelper.IsToolInstalled("winget"))
+            if (await ProcessHelper.FindExecutableInPathAsync("winget"))
             {
                 ConsoleHelper.WriteInfo($"Installing {Name} via winget...");
-                var output = ProcessHelper.GetCommandOutput("winget",
+                var output = await ProcessHelper.GetCommandOutput("winget",
                     "install --id=Docker.DockerDesktop -e --source=winget --accept-source-agreements --accept-package-agreements --force");
 
                 if (output != null)
@@ -114,7 +114,7 @@ public class DockerDesktopInstaller : IInstaller
 
             if (File.Exists(dockerPath))
             {
-                ProcessHelper.GetCommandOutput("reg",
+                await ProcessHelper.GetCommandOutput("reg",
                     $"add \"HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" /v \"Docker Desktop\" /t REG_SZ /d \"\\\"{dockerPath}\\\"\" /f");
                 ConsoleHelper.WriteSuccess("Docker Desktop will start on boot.");
             }
@@ -135,7 +135,7 @@ public class DockerDesktopInstaller : IInstaller
             for (int i = 0; i < maxRetries && !dockerReady; i++)
             {
                 await Task.Delay(5000);
-                var output = ProcessHelper.GetCommandOutput("docker", "ps");
+                var output = await ProcessHelper.GetCommandOutput("docker", "ps");
                 if (output != null)
                 {
                     dockerReady = true;
@@ -146,7 +146,7 @@ public class DockerDesktopInstaller : IInstaller
             {
                 // Pull pgvector image
                 ConsoleHelper.WriteInfo("Pulling pgvector/pgvector:pg17 image...");
-                ProcessHelper.GetCommandOutput("docker", "pull pgvector/pgvector:pg17");
+                await ProcessHelper.GetCommandOutput("docker", "pull pgvector/pgvector:pg17");
                 ConsoleHelper.WriteSuccess("Image pgvector/pgvector:pg17 pulled successfully.");
             }
             else

@@ -17,10 +17,9 @@ public class DotNetSdkInstaller : IInstaller
             return false;
         }
         
-        var output = ProcessHelper.GetCommandOutput("dotnet", "--info");
+        var output = await ProcessHelper.GetCommandOutput("dotnet", "--info");
         if (output != null && output.Contains("8.0."))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
         return false;

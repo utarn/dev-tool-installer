@@ -17,25 +17,21 @@ public class NodeJsToolsInstaller : IInstaller
 
     public async Task<bool> IsInstalledAsync()
     {
-        var allInstalled = true;
-        
+        var result = await ProcessHelper.GetCommandOutput("npm", "list -g --depth=0");
+        if (string.IsNullOrWhiteSpace(result))
+        {
+            return false;
+        }
+
         foreach (var tool in _tools.Keys)
         {
-            var result = ProcessHelper.GetCommandOutput("npm", $"list -g {tool}");
-            if (string.IsNullOrWhiteSpace(result) || result.Contains("empty"))
+            if (!result.Contains(tool))
             {
-                allInstalled = false;
-                break;
+                return false;
             }
         }
 
-        if (allInstalled)
-        {
-            ConsoleHelper.WriteWarning($"{Name} are already installed");
-            return true;
-        }
-        
-        return false;
+        return true;
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
@@ -44,7 +40,6 @@ public class NodeJsToolsInstaller : IInstaller
 
         try
         {
-            var allSuccess = true;
             var installedCount = 0;
             var totalCount = _tools.Count;
 
@@ -53,16 +48,15 @@ public class NodeJsToolsInstaller : IInstaller
                 ConsoleHelper.WriteInfo($"Checking {toolName}...");
                 
                 // Check if tool is already installed
-                var result = ProcessHelper.GetCommandOutput("npm", $"list -g {toolName}");
+                var result = await ProcessHelper.GetCommandOutput("npm", $"list -g {toolName}");
                 if (!string.IsNullOrWhiteSpace(result) && !result.Contains("empty"))
                 {
-                    ConsoleHelper.WriteWarning($"{toolName} is already installed");
                     installedCount++;
                     continue;
                 }
 
                 ConsoleHelper.WriteInfo($"Installing {toolName}: {description}");
-                var success = ProcessHelper.ExecuteCommand("npm", $"install -g {toolName}");
+                var success = await ProcessHelper.ExecuteCommand("npm", $"install -g {toolName}");
                 
                 if (success)
                 {
@@ -72,7 +66,6 @@ public class NodeJsToolsInstaller : IInstaller
                 else
                 {
                     ConsoleHelper.WriteError($"Failed to install {toolName}");
-                    allSuccess = false;
                 }
             }
 

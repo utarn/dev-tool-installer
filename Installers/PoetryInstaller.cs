@@ -1,15 +1,20 @@
 namespace DevToolInstaller.Installers;
 
-public class NpmInstaller : IInstaller
+public class PoetryInstaller : IInstaller
 {
-    public string Name => "NPM";
-    public DevelopmentCategory Category => DevelopmentCategory.NodeJS;
-    public string Description => "Node Package Manager - Package manager for JavaScript";
-    public List<string> Dependencies => new() { "Node.js" };
+    public string Name => "Poetry";
+    public DevelopmentCategory Category => DevelopmentCategory.Python;
+    public string Description => "Python dependency management and packaging tool";
+    public List<string> Dependencies => new() { "Python", "Pip" };
 
     public async Task<bool> IsInstalledAsync()
     {
-        return await ProcessHelper.FindExecutableInPathAsync("npm.cmd");
+        if (await ProcessHelper.FindExecutableInPathAsync("poetry.exe"))
+        {
+            ConsoleHelper.WriteWarning($"{Name} is already installed");
+            return true;
+        }
+        return false;
     }
 
     public async Task<bool> InstallAsync(CancellationToken cancellationToken = default)
@@ -18,10 +23,11 @@ public class NpmInstaller : IInstaller
 
         try
         {
-            // Update npm to the latest version
-            ConsoleHelper.WriteInfo("Updating npm to the latest version...");
+            // Ensure pip is up to date
+            await ProcessHelper.ExecuteCommand("python", "-m pip install --upgrade pip");
             
-            var success = await ProcessHelper.ExecuteCommand("npm", "install -g npm@latest");
+            ConsoleHelper.WriteInfo($"Installing {Name} using pip...");
+            var success = await ProcessHelper.ExecuteCommand("pip", "install poetry");
 
             if (success)
             {

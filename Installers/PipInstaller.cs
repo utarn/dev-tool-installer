@@ -12,10 +12,9 @@ public class PipInstaller : IInstaller
         // Primary check: Check if pip is available by running python -m pip --version
         try
         {
-            var result = ProcessHelper.GetCommandOutput("python", "-m pip --version");
+            var result = await ProcessHelper.GetCommandOutput("python", "-m pip --version");
             if (!string.IsNullOrWhiteSpace(result))
             {
-                ConsoleHelper.WriteWarning($"{Name} is already installed");
                 return true;
             }
         }
@@ -27,7 +26,6 @@ public class PipInstaller : IInstaller
         // Secondary check: Check for pip executable in PATH (e.g., pip.exe)
         if (await ProcessHelper.FindExecutableInPathAsync("pip.exe"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed (via PATH check)");
             return true;
         }
         
@@ -42,7 +40,7 @@ public class PipInstaller : IInstaller
         {
             // First try to ensure pip is installed
             ConsoleHelper.WriteInfo("Ensuring pip is installed...");
-            var ensureSuccess = ProcessHelper.ExecuteCommand("python", "-m ensurepip --default-pip");
+            var ensureSuccess = await ProcessHelper.ExecuteCommand("python", "-m ensurepip --default-pip");
             
             if (!ensureSuccess)
             {
@@ -51,7 +49,7 @@ public class PipInstaller : IInstaller
 
             // Upgrade pip to the latest version
             ConsoleHelper.WriteInfo("Upgrading pip to the latest version...");
-            var upgradeSuccess = ProcessHelper.ExecuteCommand("python", "-m pip install --upgrade pip");
+            var upgradeSuccess = await ProcessHelper.ExecuteCommand("python", "-m pip install --upgrade pip");
 
             if (upgradeSuccess)
             {

@@ -25,11 +25,10 @@ The installer automatically sets up:
 3. **Git** - Version control system
 4. **Windows Terminal** - Modern terminal application
 5. **PowerShell 7** - Latest PowerShell version
-6. **Docker Desktop** - Container platform
+6. **Docker Desktop** - Container platform (winget package: Docker.DockerDesktop)
    - Automatically configured with optimal settings
    - Pulls pgvector/pgvector:pg17 image
    - Configured to start on boot
-7. **Ngrok** - Secure tunneling service
 
 ## Building
 

@@ -12,7 +12,6 @@ public static class ToolRegistry
         new WindowsTerminalInstaller(),
         new PowerShell7Installer(),
         new DockerDesktopInstaller(),
-        new NgrokInstaller(),
         new PythonInstaller(),
         new PipInstaller(),
         new PoetryInstaller(),
@@ -22,7 +21,8 @@ public static class ToolRegistry
         new NpmInstaller(),
         new NodeJsToolsInstaller(),
         new FlowiseInstaller(),
-        new PostgreSQLInstaller()
+        new PostgreSQLInstaller(),
+        new OhMyPoshInstaller()
     };
 
     public static async Task<List<MenuOption>> GetAllToolsAsync()

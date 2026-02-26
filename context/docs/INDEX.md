@@ -3,6 +3,7 @@
 ## Feature Documentation
 - [UAC Elevation Feature](uac-elevation.md) - Information about the Windows User Account Control elevation functionality
 - [Code Signing Feature](code-signing.md) - Information about code signing with USB token certificates
+- [Node.js Installers](nodejs-installers.md) - รายละเอียดการติดตั้ง Node.js toolchain ผ่าน nvm-windows และ dependency chain ที่เกี่ยวข้อง
 
 ## Other Documentation
 (Additional documentation files will be listed here as they are created)

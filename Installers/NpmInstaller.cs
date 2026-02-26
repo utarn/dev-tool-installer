@@ -5,7 +5,7 @@ public class NpmInstaller : IInstaller
     public string Name => "NPM";
     public DevelopmentCategory Category => DevelopmentCategory.NodeJS;
     public string Description => "Node Package Manager - Package manager for JavaScript";
-    public List<string> Dependencies => new() { "Node.js" };
+    public List<string> Dependencies => new() { "Node.js 20" };
 
     public async Task<bool> IsInstalledAsync()
     {

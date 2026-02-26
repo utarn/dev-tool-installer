@@ -13,7 +13,7 @@ public class NodeJsToolsInstaller : IInstaller
     public string Name => "Node.js Development Tools";
     public DevelopmentCategory Category => DevelopmentCategory.NodeJS;
     public string Description => "Common Node.js development tools including nodemon, express-generator, typescript, and ts-node";
-    public List<string> Dependencies => new() { "Node.js" };
+    public List<string> Dependencies => new() { "Node.js 20" };
 
     public async Task<bool> IsInstalledAsync()
     {

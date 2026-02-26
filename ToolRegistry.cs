@@ -22,7 +22,8 @@ public static class ToolRegistry
         new NodeJsToolsInstaller(),
         new FlowiseInstaller(),
         new PostgreSQLInstaller(),
-        new OhMyPoshInstaller()
+        new OhMyPoshInstaller(),
+        new FontInstaller()
     };
 
     public static async Task<List<MenuOption>> GetAllToolsAsync()

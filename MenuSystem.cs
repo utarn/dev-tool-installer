@@ -9,6 +9,7 @@ public class MenuSystem : IDisposable
     private List<CategoryGroup> _categories = new();
     private int _scrollOffset = 0;
     private IInstaller? _currentInstaller;
+    private bool _forceReinstall = false;
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     
     public async Task RunAsync()
@@ -168,9 +169,23 @@ public class MenuSystem : IDisposable
                 Console.Write($"{prefix}{checkbox} {row.Text}");
                 Console.ResetColor();
 
-                // Show tool count
+                // Show tool count — pending vs total
+                var pendingCount = row.CategoryRef.Tools.Count(t => !t.IsInstalled);
+                var totalCount = row.CategoryRef.Tools.Count;
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write($"  ({row.CategoryRef.Tools.Count} tools)");
+                if (_forceReinstall)
+                {
+                    Console.Write($"  ({totalCount} tools - force reinstall)");
+                }
+                else if (pendingCount == 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.Write($"  (✓ all {totalCount} installed)");
+                }
+                else
+                {
+                    Console.Write($"  ({pendingCount} to install / {totalCount} total)");
+                }
                 Console.ResetColor();
                 Console.WriteLine();
             }
@@ -218,12 +233,21 @@ public class MenuSystem : IDisposable
 
         // Selected count
         var selectedCount = _categories.Count(c => c.IsSelected);
-        var totalTools = _categories.Where(c => c.IsSelected).Sum(c => c.Tools.Count);
+        var selectedCats = _categories.Where(c => c.IsSelected);
+        var pendingTools = selectedCats.Sum(c => c.Tools.Count(t => !t.IsInstalled));
+        var totalTools = selectedCats.Sum(c => c.Tools.Count);
         ConsoleHelper.SetCursorPosition(startX + 4, startY + height - footerRows + 1);
         if (selectedCount > 0)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write($"{selectedCount} categories selected ({totalTools} tools)");
+            if (_forceReinstall)
+            {
+                Console.Write($"{selectedCount} categories selected ({totalTools} tools - force reinstall)");
+            }
+            else
+            {
+                Console.Write($"{selectedCount} categories selected ({pendingTools} to install / {totalTools} total)");
+            }
             Console.ResetColor();
         }
         else
@@ -233,10 +257,19 @@ public class MenuSystem : IDisposable
             Console.ResetColor();
         }
 
+        // Force reinstall indicator
+        if (_forceReinstall)
+        {
+            ConsoleHelper.SetCursorPosition(startX + 4, startY + height - footerRows + 2);
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write("⚠ FORCE REINSTALL MODE — will reinstall already-installed tools");
+            Console.ResetColor();
+        }
+
         // Help
         ConsoleHelper.SetCursorPosition(startX + 2, startY + height - 2);
         Console.ForegroundColor = ConsoleColor.Gray;
-        Console.Write("[↑↓ Navigate] [Space Toggle] [A All] [Enter Install] [Esc Exit]");
+        Console.Write("[↑↓ Navigate] [Space Toggle] [A All] [R Reinstall] [Enter Install] [Esc Exit]");
         Console.ResetColor();
     }
 
@@ -339,6 +372,9 @@ public class MenuSystem : IDisposable
                 foreach (var cat in _categories)
                     cat.IsSelected = anyUnselected;
                 break;
+            case ConsoleKey.R:
+                _forceReinstall = !_forceReinstall;
+                break;
             case ConsoleKey.Escape:
                 CurrentState = MenuState.Complete;
                 break;
@@ -354,7 +390,7 @@ public class MenuSystem : IDisposable
         var itemsToInstall = _categories
             .Where(c => c.IsSelected)
             .SelectMany(c => c.Tools)
-            .Where(t => t.Installer != null && !t.IsInstalled)
+            .Where(t => t.Installer != null && (_forceReinstall || !t.IsInstalled))
             .ToList();
 
         if (itemsToInstall.Count == 0)

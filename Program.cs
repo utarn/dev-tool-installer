@@ -32,17 +32,6 @@ if (!ProcessHelper.IsAdministrator())
     return;
 }
 
-// Move working directory away from the app folder so child processes
-// don't lock it (prevents "folder in use" when trying to delete/update the app)
-try
-{
-    Environment.CurrentDirectory = Path.GetTempPath();
-}
-catch
-{
-    // Ignore if we can't change directory
-}
-
 // Check and install winget if needed
 await EnsureWingetInstalledAsync();
 

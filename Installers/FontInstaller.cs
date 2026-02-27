@@ -1,15 +1,33 @@
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
+using Microsoft.Win32;
 
 namespace DevToolInstaller.Installers;
 
-public class FontInstaller : IInstaller
+public partial class FontInstaller : IInstaller
 {
     private const string CascadiaMonoDownloadUrl =
         "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/CascadiaMono.zip";
 
     private static readonly string BundledThaiSarabunZip =
         Path.Combine(AppContext.BaseDirectory, "font", "THSARABUN_PSK.zip");
+
+    /// <summary>Registry key where Windows stores installed font entries.</summary>
+    private const string FontsRegistryKey = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts";
+
+    // Win32 APIs for immediate font registration (no reboot needed)
+    [LibraryImport("gdi32.dll", EntryPoint = "AddFontResourceW", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial int AddFontResource(string lpFileName);
+
+    [LibraryImport("user32.dll", EntryPoint = "SendMessageTimeoutW")]
+    private static partial nint SendMessageTimeout(
+        nint hWnd, uint msg, nint wParam, nint lParam,
+        uint fuFlags, uint uTimeout, out nint lpdwResult);
+
+    private const nint HWND_BROADCAST = 0xFFFF;
+    private const uint WM_FONTCHANGE = 0x001D;
+    private const uint SMTO_ABORTIFHUNG = 0x0002;
 
     public string Name => "Developer Fonts";
     public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
@@ -95,6 +113,13 @@ public class FontInstaller : IInstaller
                 return false;
             }
 
+            // Open registry key for font registration (HKLM — requires admin)
+            using var fontsKey = Registry.LocalMachine.OpenSubKey(FontsRegistryKey, writable: true);
+            if (fontsKey == null)
+            {
+                progressReporter?.ReportWarning("Could not open Fonts registry key. Fonts will be copied but may need a restart.");
+            }
+
             progressReporter?.ReportStatus($"Installing {fontFiles.Count} font file(s)...");
             int copied = 0;
 
@@ -102,18 +127,35 @@ public class FontInstaller : IInstaller
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var targetPath = Path.Combine(windowsFontsDir, Path.GetFileName(fontFile));
+                var fileName = Path.GetFileName(fontFile);
+                var targetPath = Path.Combine(windowsFontsDir, fileName);
 
-                // Explicitly overwrite existing font file with the same file name.
+                // Copy font file to Windows Fonts directory
                 File.Copy(fontFile, targetPath, overwrite: true);
+
+                // Register font in registry so Windows recognizes the font name
+                // Registry value name = font display name, value = filename
+                // For simplicity, use filename without extension + type suffix
+                var fontName = Path.GetFileNameWithoutExtension(fileName);
+                var fontType = fileName.EndsWith(".otf", StringComparison.OrdinalIgnoreCase)
+                    ? " (OpenType)" : " (TrueType)";
+                fontsKey?.SetValue(fontName + fontType, fileName, RegistryValueKind.String);
+
+                // Notify GDI about the new font (makes it available immediately)
+                AddFontResource(targetPath);
+
                 copied++;
 
                 var progress = 20 + (int)(75.0 * copied / fontFiles.Count);
                 progressReporter?.ReportProgress(progress);
             }
 
+            // Broadcast WM_FONTCHANGE so all applications pick up the new fonts
+            progressReporter?.ReportStatus("Broadcasting font change notification...");
+            SendMessageTimeout(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, SMTO_ABORTIFHUNG, 5000, out _);
+
             progressReporter?.ReportProgress(100);
-            progressReporter?.ReportSuccess($"Font installation completed. {copied} file(s) copied to Windows Fonts.");
+            progressReporter?.ReportSuccess($"Font installation completed. {copied} file(s) installed and registered.");
             return true;
         }
         catch (OperationCanceledException)

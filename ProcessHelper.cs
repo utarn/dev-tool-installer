@@ -88,6 +88,19 @@ public static class ProcessHelper
             searchPaths.AddRange(pathVariable.Split(Path.PathSeparator));
         }
 
+        // Also check registry PATH (Machine + User) which may differ from process PATH
+        var registryPath = GetRegistryPath();
+        if (!string.IsNullOrWhiteSpace(registryPath))
+        {
+            foreach (var rp in registryPath.Split(Path.PathSeparator))
+            {
+                if (!string.IsNullOrWhiteSpace(rp) && !searchPaths.Contains(rp))
+                {
+                    searchPaths.Add(rp);
+                }
+            }
+        }
+
         foreach (var path in searchPaths.Where(p => !string.IsNullOrWhiteSpace(p) && Directory.Exists(p)))
         {
             var fullPath = Path.Combine(path!, executableName);
@@ -125,14 +138,15 @@ public static class ProcessHelper
     {
         try
         {
-            var process = new Process
+            using var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "powershell.exe",
                     Arguments = $"-NoProfile -Command \"& '{scriptPath}' {arguments}\"",
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 }
             };
 
@@ -157,7 +171,7 @@ public static class ProcessHelper
     {
         try
         {
-            var process = new Process
+            using var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -166,7 +180,8 @@ public static class ProcessHelper
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 }
             };
 
@@ -186,7 +201,7 @@ public static class ProcessHelper
     {
         try
         {
-            var process = new Process
+            using var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -194,7 +209,8 @@ public static class ProcessHelper
                     Arguments = arguments,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    Verb = "runas"
+                    Verb = "runas",
+                    WorkingDirectory = Path.GetTempPath()
                 }
             };
 
@@ -219,14 +235,15 @@ public static class ProcessHelper
     {
         try
         {
-            var process = new Process
+            using var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
                     Arguments = $"/c start /wait msiexec.exe /i \"{msiPath}\" {arguments}",
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 }
             };
 
@@ -247,29 +264,81 @@ public static class ProcessHelper
         }
     }
 
+    /// <summary>
+    /// Gets PATH from the Windows Registry directly (Machine + User), bypassing cached process environment.
+    /// This is important after installations that modify PATH — the process env may be stale.
+    /// </summary>
+    public static string GetRegistryPath()
+    {
+        var machinePath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine) ?? "";
+        var userPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
+        return machinePath + Path.PathSeparator + userPath;
+    }
+
+    /// <summary>
+    /// Uses 'where' command via cmd.exe to find an executable in the system PATH.
+    /// This can find executables that the process PATH doesn't see.
+    /// </summary>
+    public static async Task<bool> FindExecutableWithWhereAsync(string executableName)
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c where {executableName}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
+                }
+            };
+
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.StandardError.ReadToEndAsync();
+            process.WaitForExit();
+
+            return process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public static void RefreshEnvironmentVariables()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             ConsoleHelper.WriteInfo("Refreshing environment variables...");
 
-            // Refresh environment variables from the machine level
+            // Refresh non-PATH environment variables from the machine level
             foreach (System.Collections.DictionaryEntry env in Environment.GetEnvironmentVariables(EnvironmentVariableTarget.Machine))
             {
-                if (env.Key != null)
+                if (env.Key != null && !string.Equals(env.Key.ToString(), "PATH", StringComparison.OrdinalIgnoreCase))
                 {
                     Environment.SetEnvironmentVariable(env.Key.ToString()!, env.Value?.ToString(), EnvironmentVariableTarget.Process);
                 }
             }
 
-            // Refresh environment variables from the user level
+            // Refresh non-PATH environment variables from the user level (user overrides machine)
             foreach (System.Collections.DictionaryEntry env in Environment.GetEnvironmentVariables(EnvironmentVariableTarget.User))
             {
-                if (env.Key != null)
+                if (env.Key != null && !string.Equals(env.Key.ToString(), "PATH", StringComparison.OrdinalIgnoreCase))
                 {
                     Environment.SetEnvironmentVariable(env.Key.ToString()!, env.Value?.ToString(), EnvironmentVariableTarget.Process);
                 }
             }
+
+            // Merge PATH: Machine PATH + User PATH (not overwrite)
+            var machinePath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine) ?? "";
+            var userPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
+            var mergedPath = string.IsNullOrEmpty(userPath) ? machinePath : machinePath + Path.PathSeparator + userPath;
+            Environment.SetEnvironmentVariable("PATH", mergedPath, EnvironmentVariableTarget.Process);
             
             ConsoleHelper.WriteSuccess("Environment variables refreshed.");
         }
@@ -297,7 +366,8 @@ public static class ProcessHelper
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 };
             }
             else
@@ -309,15 +379,22 @@ public static class ProcessHelper
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 };
             }
             
-            var process = new Process { StartInfo = startInfo };
+            using var process = new Process { StartInfo = startInfo };
             process.Start();
-            var output = process.StandardOutput.ReadToEnd();
+            
+            // Read stdout and stderr concurrently to prevent deadlocks
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
+            
+            await Task.WhenAll(outputTask, errorTask);
             process.WaitForExit();
 
+            var output = outputTask.Result;
             return process.ExitCode == 0 ? output : null;
         }
         catch
@@ -347,7 +424,8 @@ public static class ProcessHelper
                     FileName = "powershell.exe",
                     Arguments = $"-NoProfile -Command \"& '{commandPath}' {arguments}\"",
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 };
             }
             else
@@ -357,11 +435,12 @@ public static class ProcessHelper
                     FileName = commandPath,
                     Arguments = arguments,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 };
             }
 
-            var process = new Process { StartInfo = startInfo };
+            using var process = new Process { StartInfo = startInfo };
             process.Start();
             process.WaitForExit();
             return process.ExitCode == 0;

@@ -2,7 +2,7 @@ namespace DevToolInstaller.Installers;
 
 public class PowerShell7Installer : IInstaller
 {
-    private const string DownloadUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.4.5/PowerShell-7.4.5-win-x64.msi";
+    private const string DownloadUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.5.4/PowerShell-7.5.4-win-x64.msi";
     private const string InstallerFileName = "PowerShell7Setup.msi";
 
     public string Name => "PowerShell 7";
@@ -14,7 +14,6 @@ public class PowerShell7Installer : IInstaller
     {
         if (await ProcessHelper.FindExecutableInPathAsync("pwsh.exe") || ProcessHelper.IsToolInstalled("pwsh"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
         return false;
@@ -34,7 +33,7 @@ public class PowerShell7Installer : IInstaller
             {
                 progressReporter?.ReportStatus("Installing PowerShell 7 via winget...");
                 progressReporter?.ReportProgress(20);
-                var output = ProcessHelper.GetCommandOutput("winget",
+                var output = await ProcessHelper.GetCommandOutput("winget",
                     "install --id=Microsoft.PowerShell -e --source=winget --accept-source-agreements --accept-package-agreements --force");
 
                 if (output != null)

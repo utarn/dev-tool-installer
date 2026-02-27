@@ -14,11 +14,25 @@ public class DockerDesktopInstaller : IInstaller
 
     public async Task<bool> IsInstalledAsync()
     {
-        if (await ProcessHelper.FindExecutableInPathAsync("docker.exe") || ProcessHelper.IsToolInstalled("docker"))
+        if (await ProcessHelper.FindExecutableInPathAsync("docker.exe"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
+
+        // Check common install locations (Docker Desktop doesn't always add to PATH immediately)
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var possiblePaths = new[]
+        {
+            Path.Combine(programFiles, "Docker", "Docker", "resources", "bin", "docker.exe"),
+            Path.Combine(programFiles, "Docker", "Docker", "Docker Desktop.exe"),
+        };
+
+        foreach (var path in possiblePaths)
+        {
+            if (File.Exists(path))
+                return true;
+        }
+
         return false;
     }
 

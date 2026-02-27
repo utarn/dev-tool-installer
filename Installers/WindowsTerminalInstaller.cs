@@ -3,7 +3,7 @@ namespace DevToolInstaller.Installers;
 public class WindowsTerminalInstaller : IInstaller
 {
     public string Name => "Windows Terminal";
-    public DevelopmentCategory Category => DevelopmentCategory.CSharp;
+    public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
     public string Description => "Modern terminal application for Windows with tabs, panes, and Unicode support";
     public List<string> Dependencies => new();
 

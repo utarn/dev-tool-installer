@@ -7,6 +7,7 @@ public class MenuOption
     public IInstaller? Installer { get; set; }
     public DevelopmentCategory? Category { get; set; }
     public bool IsInstalled { get; set; }
+    public bool IsSelected { get; set; }
     
     public MenuOption(string text, string? description = null)
     {

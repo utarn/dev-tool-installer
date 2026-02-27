@@ -1,132 +1,164 @@
 # DevToolInstaller
 
-A high-performance C# development environment setup tool for Windows that automatically installs and configures essential development tools with AOT (Ahead-of-Time) compilation support.
+A high-performance development environment setup tool for Windows that automatically installs and configures essential development tools with AOT (Ahead-of-Time) compilation support.
 
 ## Features
 
 - ✅ **AOT Compiled**: Native executables with fast startup and low memory footprint
 - 🚀 **Multithreaded Downloads**: Parallel downloads with real-time progress display
 - 📊 **Progress Tracking**: Visual feedback with download speed and percentage
-- 🎯 **Multiple Platforms**: Supports Windows x64 and ARM64
-- 🛠️ **Comprehensive Tool Suite**: Installs all essential development tools
+- 🎯 **Individual Tool Selection**: Checkbox UI — select individual tools or entire categories, batch install
+- 🛠️ **28 Tools**: Comprehensive development environment in one click
+- 🎨 **31 VS Code Extensions**: Pre-configured for C#, Python, React, Vue, Svelte, and more
+- ⚙️ **40+ VS Code Settings**: Pro developer settings applied automatically
+- 🔒 **Browser Privacy Settings**: Chrome, Edge, Brave policies via Registry
 
-## Installed Tools
+## Installed Tools (28 total)
 
-The installer automatically sets up:
+### C# Development (1 tool)
+| Tool | Description |
+|------|-------------|
+| .NET 10 SDK | Latest .NET development framework |
 
-1. **.NET 8 SDK** - Latest .NET development framework
-2. **Visual Studio Code** - Code editor with essential extensions
-   - ModelHarbor Agent
-   - .NET Runtime
-   - .NET Tools
-   - C# DevKit
-   - IntelliCode for C#
-   - SQLite Viewer
-3. **Git** - Version control system
-4. **Windows Terminal** - Modern terminal application
-5. **PowerShell 7** - Latest PowerShell version
-6. **Docker Desktop** - Container platform
-   - Automatically configured with optimal settings
-   - Pulls pgvector/pgvector:pg17 image
-   - Configured to start on boot
-7. **Ngrok** - Secure tunneling service
+### Python Development (5 tools)
+| Tool | Description |
+|------|-------------|
+| Python | Python runtime with PATH configuration |
+| pip | Python package manager |
+| Poetry | Python dependency management and packaging |
+| uv | Ultra-fast Python package installer (Rust-based, replaces pip/virtualenv) |
+| Visual C++ Build Tools | Required for compiling native Python packages |
+
+### Node.js Development (4 tools)
+| Tool | Description |
+|------|-------------|
+| NVM for Windows | Node Version Manager for managing multiple Node.js versions |
+| Node.js 20 | LTS Node.js runtime (via nvm) |
+| npm | Node.js package manager (updated to latest) |
+| Node.js Dev Tools | Global npm packages: pnpm, nodemon, express-generator, typescript, ts-node |
+
+### Cross-Platform Tools (18 tools)
+| Tool | Description |
+|------|-------------|
+| Git | Version control system |
+| Visual Studio Code | Code editor with 31 extensions and 40+ settings |
+| Windows Terminal | Modern terminal application (via winget) |
+| PowerShell 7 | Latest PowerShell version |
+| Docker Desktop | Container platform with auto-configuration |
+| Oh My Posh + Profile | Terminal theme engine with custom Paradox theme, PSReadLine, and Windows Terminal config |
+| Developer Fonts | CascadiaMono Nerd Font (downloaded) + TH Sarabun PSK (bundled) |
+| Notepad++ | Free source code editor with syntax highlighting |
+| Postman | API platform for building, testing, and documenting APIs |
+| RustDesk | Open-source remote desktop client |
+| WireGuard | Modern VPN client for secure network tunneling |
+| Google Chrome | Fast, secure web browser from Google |
+| Brave Browser | Privacy-focused Chromium browser with built-in ad blocking |
+| Mozilla Firefox | Privacy-focused open source web browser |
+| Opera Browser | Feature-rich web browser with built-in VPN and productivity tools |
+| Windows Explorer Settings | Show hidden files + show file extensions |
+| Browser Privacy Settings | Chrome/Edge/Brave: ask download, disable background/analytics/startup boost, remove startup entries |
+| WSL2 Memory Limit | Configure .wslconfig: memory=4GB, swap=8GB, localhostForwarding=true |
+
+## VS Code Extensions (31 auto-installed)
+
+| Category | Extensions |
+|----------|-----------|
+| **C# / .NET** | modelharbor-agent, vscode-dotnet-runtime, dotnet, csharp, csdevkit, vscodeintellicode-csharp, vscode-sqlite, csharpextensions |
+| **Python / Jupyter** | python, debugpy, vscode-pylance, jupyter, ruff |
+| **React / Frontend** | es7-react-js-snippets, vscode-tailwindcss, vscode-eslint, prettier, auto-rename-tag, path-intellisense, npm-intellisense, dotenv |
+| **Vue.js** | volar |
+| **Svelte** | svelte-vscode |
+| **General / DevTools** | material-icon-theme, markdown-preview-enhanced, markdown-mermaid, remote-ssh, ai-commit, gitlens, errorlens, vscode-docker |
+
+> If VS Code is already installed, running the installer will **skip download** and only apply extensions + settings.
+
+## VS Code Settings (40+ auto-configured)
+
+Key settings applied (merged into existing `settings.json`):
+
+| Category | Settings |
+|----------|----------|
+| **Font** | CaskaydiaMono Nerd Font, ligatures, smooth caret |
+| **Editor** | Format on save/paste, word wrap, sticky scroll, bracket pair colorization, minimap off |
+| **Files** | Auto-save after delay, trim whitespace, insert final newline |
+| **Terminal** | Nerd Font, PowerShell default, 10K scrollback |
+| **Git** | Auto-fetch, smart commit, no confirm sync |
+| **Explorer** | No confirm delete/drag, compact folders off, show .git |
+| **Workbench** | No preview tabs, no startup editor, smooth scrolling |
+
+## Browser Privacy Settings (Registry Policies)
+
+Applied to Chrome, Edge, and Brave via `HKCU\SOFTWARE\Policies\`:
+
+| Policy | Effect |
+|--------|--------|
+| PromptForDownloadLocation | Ask where to save downloads |
+| BackgroundModeEnabled | Disable background mode |
+| MetricsReportingEnabled | Disable analytics |
+| StartupBoostEnabled | Disable startup boost |
+| AutofillAddressEnabled | Disable address autofill |
+| AutofillCreditCardEnabled | Disable credit card autofill |
+| PasswordManagerEnabled | Disable built-in password manager |
+| **Startup Entries** | Remove browser auto-launch from Windows Run registry |
 
 ## Building
 
 ### Prerequisites
 
-**IMPORTANT:** AOT (Native) compilation must be done on the target platform. You cannot cross-compile from macOS to Windows with AOT enabled.
-
-- .NET 9 SDK or later
+- .NET 10 SDK
 - **For AOT builds:** Must build on Windows (x64 or ARM64)
-- For non-AOT builds: Any platform with .NET 9 SDK
 
-### Build Scripts
+Install .NET 10 SDK:
+```powershell
+winget install Microsoft.DotNet.SDK.10
+```
 
-**On Windows (for AOT builds):**
+### Build Script
+
 ```powershell
 .\build.ps1
 ```
 
-The build script will create two native executables:
-- `publish/win-x64/DevToolInstaller.exe` - For Windows x64
-- `publish/win-arm64/DevToolInstaller.exe` - For Windows ARM64
-
 ### Manual Build
 
-**On Windows for AOT compilation:**
+```powershell
+# Windows x64
+dotnet publish DevToolInstaller.csproj -c Release -r win-x64 --self-contained -o publish/win-x64 /p:PublishAot=true /p:StripSymbols=true
 
-Build for Windows x64:
-```bash
-dotnet publish -c Release -r win-x64 --self-contained -o publish/win-x64 /p:PublishAot=true
+# Windows ARM64
+dotnet publish DevToolInstaller.csproj -c Release -r win-arm64 --self-contained /p:PublishAot=true /p:StripSymbols=true
 ```
-
-Build for Windows ARM64:
-```bash
-dotnet publish -c Release -r win-arm64 --self-contained -o publish/win-arm64 /p:PublishAot=true
-```
-
-**On macOS/Linux (non-AOT, portable):**
-
-You can build a portable (non-AOT) version that will work on Windows:
-```bash
-dotnet publish -c Release -r win-x64 --self-contained -o publish/win-x64
-dotnet publish -c Release -r win-arm64 --self-contained -o publish/win-arm64
-```
-
-Note: These will be larger and slower than AOT builds but will work cross-platform.
 
 ## Usage
 
 ### Running the Installer
 
-1. **Download** the appropriate executable for your system architecture
-2. **Run as Administrator** (right-click → "Run as Administrator")
-3. The installer will:
-   - Check for administrator privileges
-   - Detect already installed tools
-   - Download and install missing tools
-   - Display progress for each installation
-   - Configure tools with optimal settings
+1. Copy the entire `publish/win-x64/` folder to the target machine
+2. **Double-click to run** — the app auto-elevates to Administrator
+3. Navigate with **↑↓**, use **Space** to toggle individual tools or categories
+4. Press **A** to select/deselect all, **R** to toggle force reinstall mode
+5. Press **Enter** to install all selected tools
+6. The installer will download, install, and configure everything
+7. After completion, choose to **restart your computer** when prompted
 
-### Command Line Options
+### Controls
 
-The installer runs interactively and will:
-- Prompt for confirmation if not running as Administrator
-- Skip tools that are already installed
-- Display real-time download progress
-- Show a summary of installations upon completion
+| Key | Action |
+|-----|--------|
+| ↑↓ | Navigate categories and tools |
+| Space | Toggle individual tool or entire category |
+| A | Select / deselect all tools |
+| R | Toggle force reinstall mode |
+| Enter | Install all selected |
+| Esc | Exit |
 
-### Installation Flow
+### Bundled Files
 
-```
-DevToolInstaller.exe
-├── Administrator Check
-├── .NET 8 SDK
-│   ├── Check if installed
-│   ├── Download installer
-│   ├── Install silently
-│   └── Verify installation
-├── Visual Studio Code
-│   ├── Check if installed
-│   ├── Download installer
-│   ├── Install silently
-│   └── Install extensions
-├── Git
-│   └── ...
-├── Windows Terminal
-│   └── (via winget)
-├── PowerShell 7
-│   └── ...
-├── Docker Desktop
-│   ├── Install
-│   ├── Configure settings
-│   ├── Enable auto-start
-│   ├── Pull pgvector image
-│   └── Start service
-└── Ngrok
-    └── ...
-```
+The exe requires these files alongside it:
+- `config/paradox.omp.json` - Oh My Posh custom theme
+- `font/THSARABUN_PSK.zip` - TH Sarabun PSK fonts
+
+> **Note:** CascadiaMono Nerd Font is downloaded at runtime from GitHub releases (not bundled due to size).
 
 ## Architecture
 
@@ -135,101 +167,70 @@ DevToolInstaller.exe
 - **DownloadManager**: Handles multithreaded downloads with progress tracking
 - **ConsoleHelper**: Thread-safe console output with colored formatting
 - **ProcessHelper**: Manages process execution and tool detection
+- **MenuSystem**: Interactive TUI with individual tool selection, category toggles, and batch install
 - **IInstaller Interface**: Common interface for all tool installers
-- **Individual Installers**: Specialized installers for each tool
+- **ToolRegistry**: Central registry of all available installers
+
+### Categories
+
+| Category | Tools |
+|----------|-------|
+| C# Development | .NET 10 SDK |
+| Python Development | Python, pip, Poetry, uv, VC++ Build Tools |
+| Node.js Development | NVM, Node.js 20, npm, Dev Tools (pnpm, nodemon, typescript, ts-node) |
+| Cross-Platform Tools | Git, VS Code, Terminal, PowerShell 7, Docker, Oh My Posh, Fonts, Notepad++, Postman, RustDesk, WireGuard, Chrome, Brave, Firefox, Opera, Explorer Settings, Browser Settings, WSL2 Config |
 
 ### AOT Compatibility
 
-The application is fully AOT-compatible:
-- Uses JSON source generation for Docker settings
+- Uses JSON source generation (`System.Text.Json.Nodes`)
 - No reflection-based serialization
-- All async methods properly structured
 - Native code generation for optimal performance
 
 ### Design Patterns
 
 - **Strategy Pattern**: Each installer implements `IInstaller`
-- **Factory Pattern**: Dynamic installer instantiation
 - **Async/Await**: Non-blocking I/O operations
 - **Thread-Safe**: Console output synchronization
-
-## Technical Details
-
-### Download System
-
-- Asynchronous HTTP downloads
-- 8KB buffer size for optimal performance
-- Real-time progress calculation
-- Download speed monitoring (MB/s)
-- Automatic retry and error handling
-
-### Progress Display
-
-```
-Progress: 45% (23.5 MB / 52.3 MB) - Speed: 8.32 MB/s
-```
-
-### Tool Detection
-
-- Checks PATH environment variable
-- Validates tool availability via command execution
-- Detects existing installations to avoid duplicates
+- **Merge-based Config**: VSCode/Terminal settings are merged, not overwritten
+- **Registry Policies**: Browser settings via HKCU policies (no admin required)
 
 ## System Requirements
 
 ### Target Systems
-- Windows 11 x64 or ARM64
-- Administrator privileges (recommended)
+- Windows 10/11 x64 or ARM64
+- Administrator privileges (required for font installation, recommended for all)
 - Internet connection for downloads
 
 ### Development System
-- .NET 9 SDK
-- macOS M1/M2/M3 (for building)
-- Windows (for building)
-
-## Error Handling
-
-The installer includes comprehensive error handling:
-- Network timeout handling (30-minute timeout)
-- File access error management
-- Process execution error catching
-- Graceful degradation for non-critical failures
-- Detailed error messages with troubleshooting info
+- .NET 10 SDK
+- Windows (for AOT builds)
 
 ## Post-Installation
 
-After installation completes:
+After installation:
 1. **Restart your terminal** to refresh environment variables
-2. **Restart your computer** (optional, recommended for full effect)
-3. Verify installations:
-   ```bash
+2. **Restart browsers** to apply privacy settings
+3. **Restart your computer** (optional, recommended)
+4. Verify:
+   ```powershell
    dotnet --version
    code --version
    git --version
    pwsh --version
    docker --version
-   ngrok version
+   python --version
+   uv --version
+   node --version
+   pnpm --version
    ```
-
-## Contributing
-
-This project uses:
-- .NET 9 with AOT compilation
-- C# 12 language features
-- Modern async/await patterns
-- JSON source generation
-
-## License
-
-This project is provided as-is for development environment setup purposes.
 
 ## Troubleshooting
 
 ### Common Issues
 
 **"Not running as Administrator"**
-- Right-click the executable
-- Select "Run as Administrator"
+- The app auto-elevates to Administrator on startup
+- If UAC prompt appears, click "Yes" to continue
 
 **"Tool already installed" but not detected**
 - Close and reopen your terminal
@@ -239,20 +240,17 @@ This project is provided as-is for development environment setup purposes.
 **Download failures**
 - Check internet connection
 - Verify firewall settings
-- Try running again (automatic retry)
+- Try running again
 
 **Docker Desktop issues**
 - Wait for Docker to fully start
-- Check Windows Subsystem for Linux (WSL2) is enabled
+- Check WSL2 is enabled
 - Verify virtualization is enabled in BIOS
 
-## Version History
+**Browser settings not applying**
+- Restart the browser completely
+- Check `chrome://policy` (Chrome) or `edge://policy` (Edge) to verify
 
-- **v1.0.0**: Initial release with AOT support and multithreaded downloads
+## License
 
-## Support
-
-For issues or questions, please check:
-1. Windows Event Viewer for installation errors
-2. Tool-specific documentation
-3. Ensure all prerequisites are met
+This project is provided as-is for development environment setup purposes.

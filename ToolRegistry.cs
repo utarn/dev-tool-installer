@@ -12,17 +12,28 @@ public static class ToolRegistry
         new WindowsTerminalInstaller(),
         new PowerShell7Installer(),
         new DockerDesktopInstaller(),
-        new NgrokInstaller(),
         new PythonInstaller(),
         new PipInstaller(),
         new PoetryInstaller(),
+        new UvInstaller(),
         new VisualCppBuildToolsInstaller(),
+        new NvmWindowsInstaller(),
         new NodeJs20Installer(),
-        new NodeJs22Installer(),
         new NpmInstaller(),
         new NodeJsToolsInstaller(),
-        new FlowiseInstaller(),
-        new PostgreSQLInstaller()
+        new OhMyPoshInstaller(),
+        new FontInstaller(),
+        new NotepadPlusPlusInstaller(),
+        new PostmanInstaller(),
+        new RustDeskInstaller(),
+        new WireGuardInstaller(),
+        new ChromeInstaller(),
+        new BraveInstaller(),
+        new FirefoxInstaller(),
+        new OperaInstaller(),
+        new WindowsExplorerSettingsInstaller(),
+        new BrowserSettingsInstaller(),
+        new WslConfigInstaller()
     };
 
     public static async Task<List<MenuOption>> GetAllToolsAsync()

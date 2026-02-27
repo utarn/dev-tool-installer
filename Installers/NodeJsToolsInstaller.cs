@@ -4,6 +4,7 @@ public class NodeJsToolsInstaller : IInstaller
 {
     private static readonly Dictionary<string, string> _tools = new()
     {
+        { "pnpm", "Fast, disk space efficient package manager" },
         { "nodemon", "Tool for automatically restarting Node.js applications on file changes" },
         { "express-generator", "Express.js application generator for scaffolding" },
         { "typescript", "TypeScript compiler for JavaScript development" },
@@ -12,8 +13,8 @@ public class NodeJsToolsInstaller : IInstaller
 
     public string Name => "Node.js Development Tools";
     public DevelopmentCategory Category => DevelopmentCategory.NodeJS;
-    public string Description => "Common Node.js development tools including nodemon, express-generator, typescript, and ts-node";
-    public List<string> Dependencies => new() { "Node.js" };
+    public string Description => "Common Node.js development tools including pnpm, nodemon, express-generator, typescript, and ts-node";
+    public List<string> Dependencies => new() { "Node.js 20" };
 
     public async Task<bool> IsInstalledAsync()
     {

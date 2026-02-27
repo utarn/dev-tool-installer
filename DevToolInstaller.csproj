@@ -18,4 +18,26 @@
     <FileVersion>2025.11.11.0</FileVersion>
   </PropertyGroup>
 
+  <!-- Bundle config files (oh-my-posh theme etc.) with the output -->
+  <ItemGroup>
+    <Content Include="config\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Bundle TH Sarabun font (CascadiaMono is downloaded at runtime) -->
+  <ItemGroup>
+    <Content Include="font\THSARABUN_PSK.zip">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Bundle WireGuard installer for offline/fallback installation -->
+  <ItemGroup>
+    <Content Include="wireguard-installer.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

@@ -24,6 +24,14 @@ if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
     Environment.Exit(1);
 }
 
+// Auto-elevate to administrator (required for font installation, winget, etc.)
+if (!ProcessHelper.IsAdministrator())
+{
+    ConsoleHelper.WriteWarning("Administrator privileges required. Restarting as administrator...");
+    ProcessHelper.RestartAsAdministrator();
+    return;
+}
+
 // Check and install winget if needed
 await EnsureWingetInstalledAsync();
 

@@ -174,12 +174,26 @@ public class MenuSystem : IDisposable
         for (int i = 0; i < _currentOptions.Count; i++)
         {
             ConsoleHelper.SetCursorPosition(startX + 4, startY + 4 + i);
-            ConsoleHelper.DrawMenuItem(_currentOptions[i].Text, i == SelectedIndex, _currentOptions[i].IsInstalled);
+            ConsoleHelper.DrawCheckboxItem(
+                _currentOptions[i].Text,
+                _currentOptions[i].IsSelected,
+                i == SelectedIndex,
+                _currentOptions[i].IsInstalled);
         }
-        
+
+        // Show selected count
+        var selectedCount = _currentOptions.Count(o => o.IsSelected);
+        if (selectedCount > 0)
+        {
+            ConsoleHelper.SetCursorPosition(startX + 4, startY + 5 + _currentOptions.Count);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write($"{selectedCount} selected");
+            Console.ResetColor();
+        }
+
         var helpText = new[]
         {
-            "[↑↓ Navigate] [Enter Install] [Esc Back]"
+            "[↑↓ Navigate] [Space Toggle] [A Select All] [Enter Install] [Esc Back]"
         };
         
         ConsoleHelper.SetCursorPosition(startX + 2, startY + height - 2);
@@ -332,6 +346,12 @@ public class MenuSystem : IDisposable
             case ConsoleKey.Enter:
                 await SelectCurrentItem();
                 break;
+            case ConsoleKey.Spacebar:
+                ToggleCurrentItem();
+                break;
+            case ConsoleKey.A:
+                ToggleAllItems();
+                break;
             case ConsoleKey.Escape:
                 GoBack();
                 break;
@@ -378,8 +398,15 @@ public class MenuSystem : IDisposable
                 }
                 break;
             case MenuState.CategoryMenu:
-                if (selectedOption.Installer != null)
+                var selectedItems = _currentOptions.Where(o => o.IsSelected && o.Installer != null).ToList();
+                if (selectedItems.Count > 0)
                 {
+                    // Batch install all checked items
+                    await BatchInstallSelectedAsync();
+                }
+                else if (selectedOption.Installer != null)
+                {
+                    // Fallback: install current highlighted item if nothing checked
                     await InitiateInstallation(selectedOption.Installer);
                 }
                 break;
@@ -423,6 +450,128 @@ public class MenuSystem : IDisposable
         CurrentState = MenuState.Installing;
         _currentInstaller = installer;
         SelectedIndex = 0;
+    }
+
+    private void ToggleCurrentItem()
+    {
+        if (CurrentState == MenuState.CategoryMenu &&
+            SelectedIndex >= 0 && SelectedIndex < _currentOptions.Count)
+        {
+            _currentOptions[SelectedIndex].IsSelected = !_currentOptions[SelectedIndex].IsSelected;
+        }
+    }
+
+    private void ToggleAllItems()
+    {
+        if (CurrentState == MenuState.CategoryMenu)
+        {
+            var anyUnselected = _currentOptions.Any(o => !o.IsSelected);
+            foreach (var option in _currentOptions)
+            {
+                option.IsSelected = anyUnselected;
+            }
+        }
+    }
+
+    private async Task BatchInstallSelectedAsync()
+    {
+        var itemsToInstall = _currentOptions
+            .Where(o => o.IsSelected && o.Installer != null)
+            .ToList();
+
+        if (itemsToInstall.Count == 0) return;
+
+        int windowWidth, windowHeight;
+        try { windowWidth = Console.WindowWidth; windowHeight = Console.WindowHeight; }
+        catch (IOException) { windowWidth = 80; windowHeight = 24; }
+
+        var width = Math.Min(80, windowWidth - 4);
+        var startX = Math.Max(0, (windowWidth - width) / 2);
+
+        int successCount = 0;
+        int failCount = 0;
+
+        for (int i = 0; i < itemsToInstall.Count; i++)
+        {
+            var item = itemsToInstall[i];
+            var installer = item.Installer!;
+
+            ConsoleHelper.ClearScreen();
+
+            var height = 14;
+            var startY = Math.Max(0, (windowHeight - height) / 2);
+
+            ConsoleHelper.DrawBorderedBox(startX, startY, width, height,
+                $"[{i + 1}/{itemsToInstall.Count}] Installing: {installer.Name}");
+
+            ConsoleHelper.SetCursorPosition(startX + 2, startY + 3);
+            ConsoleHelper.WriteInfo("Installing...");
+
+            ConsoleHelper.SetCursorPosition(startX + 24, startY + 4);
+            ConsoleHelper.DrawProgressBar(0, 100, width - 26);
+
+            var progressReporter = new MenuProgressReporter(startX, startY, width);
+            progressReporter.ReportStatus("Preparing installation...");
+
+            try
+            {
+                var success = await installer.InstallAsync(progressReporter, _cancellationTokenSource.Token);
+                if (success)
+                {
+                    successCount++;
+                    progressReporter.ReportSuccess($"{installer.Name} completed!");
+                }
+                else
+                {
+                    failCount++;
+                    progressReporter.ReportError($"{installer.Name} failed!");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                progressReporter.ReportWarning("Installation cancelled!");
+                break;
+            }
+            catch (Exception ex)
+            {
+                failCount++;
+                progressReporter.ReportError($"{installer.Name}: {ex.Message}");
+            }
+
+            // Brief pause between items so user can see result
+            if (i < itemsToInstall.Count - 1)
+                await Task.Delay(1500);
+        }
+
+        // Show summary
+        ConsoleHelper.ClearScreen();
+        var summaryHeight = 10;
+        var summaryY = Math.Max(0, (windowHeight - summaryHeight) / 2);
+        ConsoleHelper.DrawBorderedBox(startX, summaryY, width, summaryHeight, "Installation Summary");
+
+        ConsoleHelper.SetCursorPosition(startX + 4, summaryY + 3);
+        ConsoleHelper.WriteSuccess($"Succeeded: {successCount}");
+
+        if (failCount > 0)
+        {
+            ConsoleHelper.SetCursorPosition(startX + 4, summaryY + 4);
+            ConsoleHelper.WriteError($"Failed:    {failCount}");
+        }
+
+        ConsoleHelper.SetCursorPosition(startX + 4, summaryY + 5);
+        ConsoleHelper.WriteInfo($"Total:     {successCount + failCount}/{itemsToInstall.Count}");
+
+        ConsoleHelper.SetCursorPosition(startX + 2, summaryY + summaryHeight - 2);
+        ConsoleHelper.WriteInfo("Press any key to continue...");
+        try { Console.ReadKey(true); }
+        catch (InvalidOperationException) { await Task.Delay(2000); }
+
+        // Clear selections and refresh installed status
+        foreach (var option in _currentOptions)
+            option.IsSelected = false;
+
+        if (_currentCategory.HasValue)
+            _currentOptions = await ToolRegistry.GetToolsByCategoryAsync(_currentCategory.Value);
     }
 
     private void GoBack()

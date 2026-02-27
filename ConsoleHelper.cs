@@ -153,6 +153,37 @@ public static class ConsoleHelper
         }
     }
 
+    public static void DrawCheckboxItem(string text, bool isChecked, bool isCursor, bool isInstalled = false)
+    {
+        lock (_lock)
+        {
+            var prefix = isCursor ? "> " : "  ";
+            var checkbox = isChecked ? "[X]" : "[ ]";
+
+            if (isCursor)
+            {
+                Console.BackgroundColor = ConsoleColor.Blue;
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+            else if (isChecked)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+            }
+
+            Console.Write($"{prefix}{checkbox} {text}");
+            Console.ResetColor();
+
+            if (isInstalled)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write(" (installed)");
+                Console.ResetColor();
+            }
+
+            Console.WriteLine();
+        }
+    }
+
     public static void DrawStatusIndicator(bool isInstalled)
     {
         lock (_lock)

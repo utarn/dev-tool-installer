@@ -54,7 +54,7 @@ A high-performance development environment setup tool for Windows that automatic
 | Mozilla Firefox | Privacy-focused open source web browser |
 | Opera Browser | Feature-rich web browser with built-in VPN and productivity tools |
 | Windows Explorer Settings | Show hidden files + show file extensions |
-| Browser Privacy Settings | Chrome/Edge/Brave: ask download, disable background/analytics/startup boost |
+| Browser Privacy Settings | Chrome/Edge/Brave: ask download, disable background/analytics/startup boost, remove startup entries |
 | WSL2 Memory Limit | Configure .wslconfig: memory=4GB, swap=8GB, localhostForwarding=true |
 
 ## VS Code Extensions (31 auto-installed)
@@ -97,6 +97,7 @@ Applied to Chrome, Edge, and Brave via `HKCU\SOFTWARE\Policies\`:
 | AutofillAddressEnabled | Disable address autofill |
 | AutofillCreditCardEnabled | Disable credit card autofill |
 | PasswordManagerEnabled | Disable built-in password manager |
+| **Startup Entries** | Remove browser auto-launch from Windows Run registry |
 
 ## Building
 

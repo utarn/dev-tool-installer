@@ -23,6 +23,19 @@ public class BrowserSettingsInstaller : IInstaller
     ];
 
     /// <summary>
+    /// Known startup registry value name prefixes for Chromium browsers.
+    /// These are created when browsers enable "Continue running background apps" or "Startup boost".
+    /// Located in HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+    /// </summary>
+    private static readonly string[] StartupValuePrefixes =
+    [
+        "GoogleChromeAutoLaunch",
+        "MicrosoftEdgeAutoLaunch",
+        "BraveSoftware",
+        "Opera Browser Assistant",
+    ];
+
+    /// <summary>
     /// Common Chromium policy DWORD values applied to all browsers.
     /// Reference: https://chromeenterprise.google/policies/
     /// </summary>
@@ -124,6 +137,10 @@ public class BrowserSettingsInstaller : IInstaller
             }
         }
 
+        // Step 2: Remove browser startup entries from Windows Run registry
+        progressReporter?.ReportStatus("Removing browser startup entries...");
+        RemoveBrowserStartupEntries(progressReporter);
+
         // Summary of what was configured
         progressReporter?.ReportProgress(95);
         if (successCount > 0)
@@ -154,6 +171,51 @@ public class BrowserSettingsInstaller : IInstaller
         {
             progressReporter?.ReportError("Failed to configure browser settings for any browser.");
             return Task.FromResult(false);
+        }
+    }
+
+    /// <summary>
+    /// Remove browser auto-launch entries from HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+    /// to prevent browsers from opening on Windows startup.
+    /// </summary>
+    private static void RemoveBrowserStartupEntries(IProgressReporter? progressReporter)
+    {
+        const string runKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+
+        try
+        {
+            using var runKey = Registry.CurrentUser.OpenSubKey(runKeyPath, writable: true);
+            if (runKey == null) return;
+
+            var valueNames = runKey.GetValueNames();
+            int removedCount = 0;
+
+            foreach (var valueName in valueNames)
+            {
+                foreach (var prefix in StartupValuePrefixes)
+                {
+                    if (valueName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        runKey.DeleteValue(valueName, throwOnMissingValue: false);
+                        removedCount++;
+                        progressReporter?.ReportStatus($"  ✓ Removed startup entry: {valueName}");
+                        break;
+                    }
+                }
+            }
+
+            if (removedCount > 0)
+            {
+                progressReporter?.ReportStatus($"  Removed {removedCount} browser startup entry/entries");
+            }
+            else
+            {
+                progressReporter?.ReportStatus("  No browser startup entries found");
+            }
+        }
+        catch (Exception ex)
+        {
+            progressReporter?.ReportWarning($"Could not clean startup entries: {ex.Message}");
         }
     }
 }

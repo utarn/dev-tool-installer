@@ -7,13 +7,13 @@ A high-performance development environment setup tool for Windows that automatic
 - ✅ **AOT Compiled**: Native executables with fast startup and low memory footprint
 - 🚀 **Multithreaded Downloads**: Parallel downloads with real-time progress display
 - 📊 **Progress Tracking**: Visual feedback with download speed and percentage
-- 🎯 **Category-based Selection**: Checkbox UI — select entire categories, batch install
-- 🛠️ **27 Tools**: Comprehensive development environment in one click
+- 🎯 **Individual Tool Selection**: Checkbox UI — select individual tools or entire categories, batch install
+- 🛠️ **28 Tools**: Comprehensive development environment in one click
 - 🎨 **31 VS Code Extensions**: Pre-configured for C#, Python, React, Vue, Svelte, and more
 - ⚙️ **40+ VS Code Settings**: Pro developer settings applied automatically
 - 🔒 **Browser Privacy Settings**: Chrome, Edge, Brave policies via Registry
 
-## Installed Tools (27 total)
+## Installed Tools (28 total)
 
 ### C# Development (1 tool)
 | Tool | Description |
@@ -37,7 +37,7 @@ A high-performance development environment setup tool for Windows that automatic
 | npm | Node.js package manager (updated to latest) |
 | Node.js Dev Tools | Global npm packages: pnpm, nodemon, express-generator, typescript, ts-node |
 
-### Cross-Platform Tools (17 tools)
+### Cross-Platform Tools (18 tools)
 | Tool | Description |
 |------|-------------|
 | Git | Version control system |
@@ -50,6 +50,7 @@ A high-performance development environment setup tool for Windows that automatic
 | Notepad++ | Free source code editor with syntax highlighting |
 | Postman | API platform for building, testing, and documenting APIs |
 | RustDesk | Open-source remote desktop client |
+| WireGuard | Modern VPN client for secure network tunneling |
 | Google Chrome | Fast, secure web browser from Google |
 | Brave Browser | Privacy-focused Chromium browser with built-in ad blocking |
 | Mozilla Firefox | Privacy-focused open source web browser |
@@ -134,18 +135,20 @@ dotnet publish DevToolInstaller.csproj -c Release -r win-arm64 --self-contained 
 
 1. Copy the entire `publish/win-x64/` folder to the target machine
 2. **Double-click to run** — the app auto-elevates to Administrator
-3. Select categories with **Space** to toggle, **A** to select all
-4. Press **Enter** to batch install all tools in selected categories
-5. The installer will download, install, and configure everything
-6. After completion, choose to **restart your computer** when prompted
+3. Navigate with **↑↓**, use **Space** to toggle individual tools or categories
+4. Press **A** to select/deselect all, **R** to toggle force reinstall mode
+5. Press **Enter** to install all selected tools
+6. The installer will download, install, and configure everything
+7. After completion, choose to **restart your computer** when prompted
 
 ### Controls
 
 | Key | Action |
 |-----|--------|
-| ↑↓ | Navigate categories |
-| Space | Toggle category selection |
-| A | Select / deselect all |
+| ↑↓ | Navigate categories and tools |
+| Space | Toggle individual tool or entire category |
+| A | Select / deselect all tools |
+| R | Toggle force reinstall mode |
 | Enter | Install all selected |
 | Esc | Exit |
 
@@ -164,7 +167,7 @@ The exe requires these files alongside it:
 - **DownloadManager**: Handles multithreaded downloads with progress tracking
 - **ConsoleHelper**: Thread-safe console output with colored formatting
 - **ProcessHelper**: Manages process execution and tool detection
-- **MenuSystem**: Interactive TUI with category-level checkboxes and batch install
+- **MenuSystem**: Interactive TUI with individual tool selection, category toggles, and batch install
 - **IInstaller Interface**: Common interface for all tool installers
 - **ToolRegistry**: Central registry of all available installers
 
@@ -175,7 +178,7 @@ The exe requires these files alongside it:
 | C# Development | .NET 10 SDK |
 | Python Development | Python, pip, Poetry, uv, VC++ Build Tools |
 | Node.js Development | NVM, Node.js 20, npm, Dev Tools (pnpm, nodemon, typescript, ts-node) |
-| Cross-Platform Tools | Git, VS Code, Terminal, PowerShell 7, Docker, Oh My Posh, Fonts, Notepad++, Postman, RustDesk, Chrome, Brave, Firefox, Opera, Explorer Settings, Browser Settings, WSL2 Config |
+| Cross-Platform Tools | Git, VS Code, Terminal, PowerShell 7, Docker, Oh My Posh, Fonts, Notepad++, Postman, RustDesk, WireGuard, Chrome, Brave, Firefox, Opera, Explorer Settings, Browser Settings, WSL2 Config |
 
 ### AOT Compatibility
 

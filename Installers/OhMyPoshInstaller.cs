@@ -157,7 +157,7 @@ public class OhMyPoshInstaller : IInstaller
     /// <summary>
     /// Finds and configures Windows Terminal settings.json with:
     /// - Default profile = PowerShell 7 (PowerShellCore)
-    /// - Default font = CaskaydiaCove Nerd Font
+    /// - Default font = CaskaydiaMono Nerd Font
     /// - Opacity = 70, useAcrylic = false
     /// - copyFormatting = none, copyOnSelect = false
     /// </summary>

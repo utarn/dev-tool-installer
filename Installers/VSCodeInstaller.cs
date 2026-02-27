@@ -64,7 +64,7 @@ public class VSCodeInstaller : IInstaller
         ["workbench.iconTheme"] = JsonValue.Create("material-icon-theme"),
 
         // Font
-        ["editor.fontFamily"] = JsonValue.Create("'CaskaydiaCove Nerd Font', Consolas, 'Courier New', monospace"),
+        ["editor.fontFamily"] = JsonValue.Create("'CaskaydiaMono Nerd Font', Consolas, 'Courier New', monospace"),
         ["editor.fontSize"] = JsonValue.Create(14),
         ["editor.fontLigatures"] = JsonValue.Create(true),
         ["editor.cursorSmoothCaretAnimation"] = JsonValue.Create("on"),
@@ -100,7 +100,7 @@ public class VSCodeInstaller : IInstaller
         ["explorer.compactFolders"] = JsonValue.Create(false),
 
         // Terminal
-        ["terminal.integrated.fontFamily"] = JsonValue.Create("CaskaydiaCove Nerd Font"),
+        ["terminal.integrated.fontFamily"] = JsonValue.Create("CaskaydiaMono Nerd Font"),
         ["terminal.integrated.fontSize"] = JsonValue.Create(13),
         ["terminal.integrated.scrollback"] = JsonValue.Create(10000),
         ["terminal.integrated.defaultProfile.windows"] = JsonValue.Create("PowerShell"),

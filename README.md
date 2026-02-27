@@ -8,19 +8,19 @@ A high-performance development environment setup tool for Windows that automatic
 - 🚀 **Multithreaded Downloads**: Parallel downloads with real-time progress display
 - 📊 **Progress Tracking**: Visual feedback with download speed and percentage
 - 🎯 **Category-based Selection**: Checkbox UI — select entire categories, batch install
-- 🛠️ **21 Tools**: Comprehensive development environment in one click
+- 🛠️ **22 Tools**: Comprehensive development environment in one click
 - 🎨 **31 VS Code Extensions**: Pre-configured for C#, Python, React, Vue, Svelte, and more
 - ⚙️ **40+ VS Code Settings**: Pro developer settings applied automatically
 - 🔒 **Browser Privacy Settings**: Chrome, Edge, Brave policies via Registry
 
-## Installed Tools (21 total)
+## Installed Tools (22 total)
 
 ### C# Development (1 tool)
 | Tool | Description |
 |------|-------------|
 | .NET 10 SDK | Latest .NET development framework |
 
-### Python Development (6 tools)
+### Python Development (5 tools)
 | Tool | Description |
 |------|-------------|
 | Python | Python runtime with PATH configuration |
@@ -37,7 +37,7 @@ A high-performance development environment setup tool for Windows that automatic
 | npm | Node.js package manager (updated to latest) |
 | Node.js Dev Tools | Global npm packages: pnpm, nodemon, express-generator, typescript, ts-node |
 
-### Cross-Platform Tools (11 tools)
+### Cross-Platform Tools (12 tools)
 | Tool | Description |
 |------|-------------|
 | Git | Version control system |
@@ -51,6 +51,7 @@ A high-performance development environment setup tool for Windows that automatic
 | RustDesk | Open-source remote desktop client |
 | Windows Explorer Settings | Show hidden files + show file extensions |
 | Browser Privacy Settings | Chrome/Edge/Brave: ask download, disable background/analytics/startup boost |
+| WSL2 Memory Limit | Configure .wslconfig: memory=4GB, swap=8GB, localhostForwarding=true |
 
 ## VS Code Extensions (31 auto-installed)
 
@@ -71,7 +72,7 @@ Key settings applied (merged into existing `settings.json`):
 
 | Category | Settings |
 |----------|----------|
-| **Font** | CaskaydiaCove Nerd Font, ligatures, smooth caret |
+| **Font** | CaskaydiaMono Nerd Font, ligatures, smooth caret |
 | **Editor** | Format on save/paste, word wrap, sticky scroll, bracket pair colorization, minimap off |
 | **Files** | Auto-save after delay, trim whitespace, insert final newline |
 | **Terminal** | Nerd Font, PowerShell default, 10K scrollback |
@@ -126,10 +127,11 @@ dotnet publish DevToolInstaller.csproj -c Release -r win-arm64 --self-contained 
 ### Running the Installer
 
 1. Copy the entire `publish/win-x64/` folder to the target machine
-2. **Run as Administrator** (right-click → "Run as Administrator")
+2. **Double-click to run** — the app auto-elevates to Administrator
 3. Select categories with **Space** to toggle, **A** to select all
 4. Press **Enter** to batch install all tools in selected categories
 5. The installer will download, install, and configure everything
+6. After completion, choose to **restart your computer** when prompted
 
 ### Controls
 
@@ -167,7 +169,7 @@ The exe requires these files alongside it:
 | C# Development | .NET 10 SDK |
 | Python Development | Python, pip, Poetry, uv, VC++ Build Tools |
 | Node.js Development | NVM, Node.js 20, npm, Dev Tools (pnpm, nodemon, typescript, ts-node) |
-| Cross-Platform Tools | Git, VS Code, Terminal, PowerShell 7, Docker, Oh My Posh, Fonts, Postman, RustDesk, Explorer Settings, Browser Settings |
+| Cross-Platform Tools | Git, VS Code, Terminal, PowerShell 7, Docker, Oh My Posh, Fonts, Postman, RustDesk, Explorer Settings, Browser Settings, WSL2 Config |
 
 ### AOT Compatibility
 
@@ -218,7 +220,8 @@ After installation:
 ### Common Issues
 
 **"Not running as Administrator"**
-- Right-click the executable → "Run as Administrator"
+- The app auto-elevates to Administrator on startup
+- If UAC prompt appears, click "Yes" to continue
 
 **"Tool already installed" but not detected**
 - Close and reopen your terminal

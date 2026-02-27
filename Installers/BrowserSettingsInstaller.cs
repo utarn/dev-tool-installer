@@ -14,6 +14,7 @@ public class BrowserSettingsInstaller : IInstaller
     public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
     public string Description => "Configure browsers: ask download, disable background/analytics/startup boost, remove startup entries";
     public List<string> Dependencies => new();
+    public bool AlwaysRun => true;
 
     private static readonly (string Name, string PolicyPath)[] ChromiumBrowsers =
     [

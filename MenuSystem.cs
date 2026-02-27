@@ -132,11 +132,8 @@ public class MenuSystem : IDisposable
             }
         }
 
-        // Scroll
-        if (cursorDisplayRow < _scrollOffset)
-            _scrollOffset = cursorDisplayRow;
-        if (cursorDisplayRow >= _scrollOffset + visibleCount)
-            _scrollOffset = cursorDisplayRow - visibleCount + 1;
+        // Scroll: place selected category header at top to maximize visible tools
+        _scrollOffset = cursorDisplayRow;
         _scrollOffset = Math.Clamp(_scrollOffset, 0, Math.Max(0, displayRows.Count - visibleCount));
 
         // Render visible rows
@@ -169,8 +166,8 @@ public class MenuSystem : IDisposable
                 Console.Write($"{prefix}{checkbox} {row.Text}");
                 Console.ResetColor();
 
-                // Show tool count — pending vs total
-                var pendingCount = row.CategoryRef.Tools.Count(t => !t.IsInstalled);
+                // Show tool count — pending vs total (exclude AlwaysRun from pending)
+                var pendingCount = row.CategoryRef.Tools.Count(t => !t.IsInstalled && !(t.Installer?.AlwaysRun == true));
                 var totalCount = row.CategoryRef.Tools.Count;
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 if (_forceReinstall)
@@ -199,6 +196,11 @@ public class MenuSystem : IDisposable
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.Write($"✓ {row.ToolOption.Text}");
+                }
+                else if (row.ToolOption.Installer?.AlwaysRun == true)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkCyan;
+                    Console.Write($"↻ {row.ToolOption.Text}");
                 }
                 else
                 {
@@ -234,7 +236,7 @@ public class MenuSystem : IDisposable
         // Selected count
         var selectedCount = _categories.Count(c => c.IsSelected);
         var selectedCats = _categories.Where(c => c.IsSelected);
-        var pendingTools = selectedCats.Sum(c => c.Tools.Count(t => !t.IsInstalled));
+        var pendingTools = selectedCats.Sum(c => c.Tools.Count(t => !t.IsInstalled && !(t.Installer?.AlwaysRun == true)));
         var totalTools = selectedCats.Sum(c => c.Tools.Count);
         ConsoleHelper.SetCursorPosition(startX + 4, startY + height - footerRows + 1);
         if (selectedCount > 0)

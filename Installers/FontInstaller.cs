@@ -15,6 +15,7 @@ public class FontInstaller : IInstaller
     public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
     public string Description => "Download CascadiaMono Nerd Font and install bundled TH Sarabun into Windows Fonts";
     public List<string> Dependencies => new();
+    public bool AlwaysRun => true;
 
     public Task<bool> IsInstalledAsync()
     {

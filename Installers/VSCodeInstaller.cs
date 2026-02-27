@@ -136,45 +136,58 @@ public class VSCodeInstaller : IInstaller
     {
         progressReporter?.ReportStatus("Installing Visual Studio Code...");
 
-        var tempPath = Path.GetTempPath();
-        var installerPath = Path.Combine(tempPath, InstallerFileName);
-
         try
         {
-            progressReporter?.ReportStatus("Downloading VS Code installer...");
-            progressReporter?.ReportProgress(10);
-            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, progressReporter, cancellationToken);
+            // Check if VSCode is already installed — skip download/install, just do extensions + settings
+            var alreadyInstalled = await ProcessHelper.FindExecutableInPathAsync("code.exe") || ProcessHelper.IsToolInstalled("code");
 
-            progressReporter?.ReportStatus("Running VS Code installer...");
-            progressReporter?.ReportProgress(50);
-            var success = ProcessHelper.ExecuteInstaller(installerPath, "/VERYSILENT /NORESTART /MERGETASKS=!runcode");
-
-            progressReporter?.ReportStatus("Cleaning up...");
-            progressReporter?.ReportProgress(80);
-            if (File.Exists(installerPath))
+            if (alreadyInstalled)
             {
-                File.Delete(installerPath);
-            }
-
-            if (success)
-            {
-                progressReporter?.ReportStatus("Installing extensions...");
-                progressReporter?.ReportProgress(85);
-                await InstallExtensionsAsync(progressReporter);
-
-                progressReporter?.ReportStatus("Configuring VS Code settings...");
-                progressReporter?.ReportProgress(95);
-                ConfigureUserSettings(progressReporter);
-
-                progressReporter?.ReportProgress(100);
-                progressReporter?.ReportSuccess("Visual Studio Code installation completed successfully!");
-                return true;
+                progressReporter?.ReportStatus("VS Code already installed. Configuring extensions & settings...");
+                progressReporter?.ReportProgress(10);
             }
             else
             {
-                progressReporter?.ReportError("Visual Studio Code installation failed");
-                return false;
+                var tempPath = Path.GetTempPath();
+                var installerPath = Path.Combine(tempPath, InstallerFileName);
+
+                progressReporter?.ReportStatus("Downloading VS Code installer...");
+                progressReporter?.ReportProgress(10);
+                await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, progressReporter, cancellationToken);
+
+                progressReporter?.ReportStatus("Running VS Code installer...");
+                progressReporter?.ReportProgress(50);
+                var success = ProcessHelper.ExecuteInstaller(installerPath, "/VERYSILENT /NORESTART /MERGETASKS=!runcode");
+
+                progressReporter?.ReportStatus("Cleaning up...");
+                progressReporter?.ReportProgress(70);
+                if (File.Exists(installerPath))
+                {
+                    File.Delete(installerPath);
+                }
+
+                if (!success)
+                {
+                    progressReporter?.ReportError("Visual Studio Code installation failed");
+                    return false;
+                }
             }
+
+            // Always install extensions and configure settings (even if VSCode was already installed)
+            progressReporter?.ReportStatus("Installing extensions...");
+            progressReporter?.ReportProgress(75);
+            await InstallExtensionsAsync(progressReporter);
+
+            progressReporter?.ReportStatus("Configuring VS Code settings...");
+            progressReporter?.ReportProgress(95);
+            ConfigureUserSettings(progressReporter);
+
+            progressReporter?.ReportProgress(100);
+            progressReporter?.ReportSuccess(
+                alreadyInstalled
+                    ? "VS Code extensions & settings configured successfully!"
+                    : "Visual Studio Code installation completed successfully!");
+            return true;
         }
         catch (Exception ex)
         {

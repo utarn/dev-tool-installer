@@ -14,7 +14,6 @@ public class PowerShell7Installer : IInstaller
     {
         if (await ProcessHelper.FindExecutableInPathAsync("pwsh.exe") || ProcessHelper.IsToolInstalled("pwsh"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
         return false;

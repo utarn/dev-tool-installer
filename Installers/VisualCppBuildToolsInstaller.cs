@@ -28,7 +28,6 @@ public class VisualCppBuildToolsInstaller : IInstaller
         {
             if (File.Exists(path))
             {
-                ConsoleHelper.WriteWarning($"{Name} is already installed");
                 return true;
             }
         }

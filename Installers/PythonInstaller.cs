@@ -14,7 +14,6 @@ public class PythonInstaller : IInstaller
     {
         if (await ProcessHelper.FindExecutableInPathAsync("python.exe") || ProcessHelper.IsToolInstalled("python"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
         return false;

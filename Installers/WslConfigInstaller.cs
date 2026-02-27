@@ -31,7 +31,6 @@ public class WslConfigInstaller : IInstaller
                 var content = File.ReadAllText(WslConfigPath);
                 if (content.Contains("memory=4GB") && content.Contains("swap=8GB"))
                 {
-                    ConsoleHelper.WriteWarning($"{Name} already configured");
                     return Task.FromResult(true);
                 }
             }

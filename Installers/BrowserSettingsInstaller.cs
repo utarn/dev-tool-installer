@@ -69,7 +69,6 @@ public class BrowserSettingsInstaller : IInstaller
             // Consider "installed" if we found at least one browser policy key and all are configured
             if (checkedCount > 0 && configuredCount == checkedCount)
             {
-                ConsoleHelper.WriteWarning($"{Name} already configured for {configuredCount} browser(s)");
                 return Task.FromResult(true);
             }
         }

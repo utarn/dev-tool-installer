@@ -11,14 +11,12 @@ public class PostmanInstaller : IInstaller
     {
         if (await ProcessHelper.FindExecutableInPathAsync("Postman.exe"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
 
         // Also check via winget list
         if (ProcessHelper.IsToolInstalled("Postman"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
 

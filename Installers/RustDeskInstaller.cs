@@ -11,13 +11,11 @@ public class RustDeskInstaller : IInstaller
     {
         if (await ProcessHelper.FindExecutableInPathAsync("rustdesk.exe"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
 
         if (ProcessHelper.IsToolInstalled("RustDesk"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
 

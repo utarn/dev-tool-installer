@@ -11,7 +11,6 @@ public class PoetryInstaller : IInstaller
     {
         if (await ProcessHelper.FindExecutableInPathAsync("poetry.exe"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
         return false;

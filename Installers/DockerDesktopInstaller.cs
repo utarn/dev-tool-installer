@@ -16,7 +16,6 @@ public class DockerDesktopInstaller : IInstaller
     {
         if (await ProcessHelper.FindExecutableInPathAsync("docker.exe") || ProcessHelper.IsToolInstalled("docker"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
         return false;

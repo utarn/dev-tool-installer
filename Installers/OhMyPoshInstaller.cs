@@ -28,7 +28,6 @@ public class OhMyPoshInstaller : IInstaller
                 var content = File.ReadAllText(profilePath);
                 if (content.Contains("oh-my-posh init pwsh"))
                 {
-                    ConsoleHelper.WriteWarning($"{Name} is already installed and configured");
                     return true;
                 }
             }

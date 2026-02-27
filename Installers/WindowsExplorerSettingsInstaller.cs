@@ -24,7 +24,6 @@ public class WindowsExplorerSettingsInstaller : IInstaller
                 // Hidden = 1 means show hidden files; HideFileExt = 0 means show extensions
                 if (hidden is int h && h == 1 && hideFileExt is int e && e == 0)
                 {
-                    ConsoleHelper.WriteWarning($"{Name} already configured");
                     return Task.FromResult(true);
                 }
             }

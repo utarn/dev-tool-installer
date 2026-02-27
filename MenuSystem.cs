@@ -447,11 +447,90 @@ public class MenuSystem : IDisposable
         try { Console.ReadKey(true); }
         catch (InvalidOperationException) { await Task.Delay(2000); }
 
+        // Prompt to restart computer
+        if (successCount > 0)
+        {
+            await PromptRestartComputerAsync(startX, width, windowHeight);
+        }
+
         // Clear selections and refresh
         foreach (var cat in _categories)
             cat.IsSelected = false;
 
         await LoadCategoriesAsync();
+    }
+
+    private async Task PromptRestartComputerAsync(int startX, int width, int windowHeight)
+    {
+        ConsoleHelper.ClearScreen();
+        var boxHeight = 10;
+        var boxY = Math.Max(0, (windowHeight - boxHeight) / 2);
+
+        ConsoleHelper.DrawBorderedBox(startX, boxY, width, boxHeight, "Restart Required");
+
+        ConsoleHelper.SetCursorPosition(startX + 4, boxY + 3);
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.Write("⚠ ");
+        Console.ResetColor();
+        Console.Write("A restart is recommended to apply all changes.");
+
+        ConsoleHelper.SetCursorPosition(startX + 4, boxY + 4);
+        Console.Write("PATH, fonts, and terminal settings require a restart.");
+
+        ConsoleHelper.SetCursorPosition(startX + 4, boxY + 6);
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.Write("Restart now? [Y/N]: ");
+        Console.ResetColor();
+
+        try
+        {
+            var key = Console.ReadKey(true);
+            if (key.Key == ConsoleKey.Y)
+            {
+                ConsoleHelper.SetCursorPosition(startX + 4, boxY + 7);
+                ConsoleHelper.WriteInfo("Restarting in 5 seconds... Press any key to cancel.");
+
+                for (int i = 5; i > 0; i--)
+                {
+                    try
+                    {
+                        if (Console.KeyAvailable)
+                        {
+                            Console.ReadKey(true);
+                            ConsoleHelper.SetCursorPosition(startX + 4, boxY + 7);
+                            ConsoleHelper.WriteWarning("Restart cancelled.");
+                            await Task.Delay(1500);
+                            return;
+                        }
+                    }
+                    catch (InvalidOperationException) { }
+
+                    ConsoleHelper.SetCursorPosition(startX + 24, boxY + 7);
+                    Console.Write($"{i}...");
+                    await Task.Delay(1000);
+                }
+
+                // Restart the computer
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "shutdown",
+                    Arguments = "/r /t 0",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+                Environment.Exit(0);
+            }
+            else
+            {
+                ConsoleHelper.SetCursorPosition(startX + 4, boxY + 7);
+                ConsoleHelper.WriteInfo("Skipped restart. Please restart manually for full effect.");
+                await Task.Delay(2000);
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            await Task.Delay(2000);
+        }
     }
 
     public void Dispose()

@@ -11,7 +11,6 @@ public class UvInstaller : IInstaller
     {
         if (await ProcessHelper.FindExecutableInPathAsync("uv.exe") || ProcessHelper.IsToolInstalled("uv"))
         {
-            ConsoleHelper.WriteWarning($"{Name} is already installed");
             return true;
         }
         return false;

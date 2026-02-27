@@ -16,7 +16,6 @@ public abstract class WingetBrowserInstallerBase : IInstaller
         {
             if (await ProcessHelper.FindExecutableInPathAsync(exe))
             {
-                ConsoleHelper.WriteWarning($"{Name} is already installed");
                 return true;
             }
         }

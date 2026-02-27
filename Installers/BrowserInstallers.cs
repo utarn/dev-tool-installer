@@ -93,11 +93,3 @@ public class OperaInstaller : WingetBrowserInstallerBase
     protected override string PackageId => "Opera.Opera";
     protected override string[] ExecutableNames => ["opera.exe"];
 }
-
-public class OhMyPoshInstaller : WingetBrowserInstallerBase
-{
-    public override string Name => "Oh My Posh";
-    public override string Description => "Prompt theme engine for PowerShell and other shells";
-    protected override string PackageId => "JanDeDobbeleer.OhMyPosh";
-    protected override string[] ExecutableNames => ["oh-my-posh.exe"];
-}

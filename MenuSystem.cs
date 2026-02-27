@@ -354,12 +354,12 @@ public class MenuSystem : IDisposable
         var itemsToInstall = _categories
             .Where(c => c.IsSelected)
             .SelectMany(c => c.Tools)
-            .Where(t => t.Installer != null)
+            .Where(t => t.Installer != null && !t.IsInstalled)
             .ToList();
 
         if (itemsToInstall.Count == 0)
         {
-            // Nothing selected — install nothing
+            // Nothing to install — all selected tools are already installed or nothing selected
             return;
         }
 

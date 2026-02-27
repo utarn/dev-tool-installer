@@ -21,7 +21,6 @@ public static class ToolRegistry
         new NpmInstaller(),
         new NodeJsToolsInstaller(),
         new FlowiseInstaller(),
-        new PostgreSQLInstaller(),
         new OhMyPoshInstaller(),
         new FontInstaller(),
         new PostmanInstaller(),

@@ -45,18 +45,13 @@ public class WslConfigInstaller : IInstaller
 
     public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        progressReporter?.ReportStatus("Installing/updating WSL...");
+        progressReporter?.ReportStatus("Updating WSL...");
         progressReporter?.ReportProgress(5);
 
         try
         {
-            // Step 1: Install WSL if not already enabled (no-distribution = don't install Ubuntu)
-            progressReporter?.ReportStatus("Enabling WSL2 (wsl --install --no-distribution)...");
-            await ProcessHelper.GetCommandOutput("wsl", "--install --no-distribution");
-            progressReporter?.ReportProgress(30);
-
-            // Step 2: Update WSL to latest version
-            progressReporter?.ReportStatus("Updating WSL to latest version...");
+            // Update WSL to latest version
+            progressReporter?.ReportStatus("Updating WSL to latest version (wsl --update)...");
             await ProcessHelper.GetCommandOutput("wsl", "--update");
             progressReporter?.ReportStatus("WSL updated to latest version");
             progressReporter?.ReportProgress(40);

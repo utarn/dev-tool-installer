@@ -85,16 +85,18 @@ public class BrowserSettingsInstaller : IInstaller
         progressReporter?.ReportStatus("Configuring browser privacy settings via Registry Policies...");
         progressReporter?.ReportProgress(5);
 
-        try
+        int browserIndex = 0;
+        int totalBrowsers = ChromiumBrowsers.Length;
+        int successCount = 0;
+        var failedBrowsers = new List<string>();
+
+        foreach (var (browserName, policyPath) in ChromiumBrowsers)
         {
-            int browserIndex = 0;
-            int totalBrowsers = ChromiumBrowsers.Length;
+            browserIndex++;
+            int baseProgress = browserIndex * 90 / totalBrowsers;
 
-            foreach (var (browserName, policyPath) in ChromiumBrowsers)
+            try
             {
-                browserIndex++;
-                int baseProgress = browserIndex * 90 / totalBrowsers;
-
                 progressReporter?.ReportStatus($"Configuring {browserName}...");
 
                 // Create or open the policy key (HKCU doesn't require admin)
@@ -102,6 +104,7 @@ public class BrowserSettingsInstaller : IInstaller
                 if (key == null)
                 {
                     progressReporter?.ReportWarning($"Could not create policy key for {browserName}");
+                    failedBrowsers.Add(browserName);
                     continue;
                 }
 
@@ -110,28 +113,46 @@ public class BrowserSettingsInstaller : IInstaller
                     key.SetValue(settingKey, value, RegistryValueKind.DWord);
                 }
 
+                successCount++;
                 progressReporter?.ReportProgress(baseProgress);
                 progressReporter?.ReportStatus($"  ✓ {browserName}: {PolicySettings.Length} policies applied");
             }
+            catch (Exception ex)
+            {
+                progressReporter?.ReportWarning($"Failed to configure {browserName}: {ex.Message}");
+                failedBrowsers.Add(browserName);
+            }
+        }
 
-            // Summary of what was configured
-            progressReporter?.ReportProgress(95);
-            progressReporter?.ReportStatus("Settings applied to all Chromium browsers:");
+        // Summary of what was configured
+        progressReporter?.ReportProgress(95);
+        if (successCount > 0)
+        {
+            progressReporter?.ReportStatus($"Settings applied to {successCount} browser(s):");
             foreach (var (settingKey, description, value) in PolicySettings)
             {
                 var state = value == 1 ? "Enabled" : "Disabled";
                 progressReporter?.ReportStatus($"  • {description}: {state}");
             }
+        }
 
-            progressReporter?.ReportProgress(100);
+        if (failedBrowsers.Count > 0)
+        {
+            progressReporter?.ReportWarning($"Failed for: {string.Join(", ", failedBrowsers)}");
+        }
+
+        progressReporter?.ReportProgress(100);
+
+        if (successCount > 0)
+        {
             progressReporter?.ReportSuccess(
-                "Browser privacy settings configured for Chrome, Edge, and Brave! " +
+                $"Browser privacy settings configured for {successCount}/{totalBrowsers} browsers! " +
                 "Restart browsers to apply changes.");
             return Task.FromResult(true);
         }
-        catch (Exception ex)
+        else
         {
-            progressReporter?.ReportError($"Failed to configure browser settings: {ex.Message}");
+            progressReporter?.ReportError("Failed to configure browser settings for any browser.");
             return Task.FromResult(false);
         }
     }

@@ -43,20 +43,43 @@ public class PoetryInstaller : IInstaller
 
         try
         {
+            // Step 1: Check if poetry.exe already exists on disk (just not in PATH)
+            progressReporter?.ReportStatus("Checking for existing Poetry installation...");
+            progressReporter?.ReportProgress(10);
+            var existingPoetryPath = await FindPoetryExecutable();
+
+            if (existingPoetryPath != null)
+            {
+                // Poetry exists but not in PATH — just fix PATH
+                progressReporter?.ReportStatus($"Poetry found at '{existingPoetryPath}' but not in PATH. Adding to PATH...");
+                progressReporter?.ReportProgress(50);
+                var scriptsDir = Path.GetDirectoryName(existingPoetryPath)!;
+                AddToUserPath(scriptsDir);
+                progressReporter?.ReportStatus($"Added '{scriptsDir}' to User PATH");
+
+                progressReporter?.ReportStatus("Refreshing environment variables...");
+                progressReporter?.ReportProgress(90);
+                ProcessHelper.RefreshEnvironmentVariables();
+                progressReporter?.ReportProgress(100);
+                progressReporter?.ReportSuccess("Poetry PATH configured successfully!");
+                return true;
+            }
+
+            // Step 2: Poetry not found at all — install via pip
             // Ensure pip is up to date
             progressReporter?.ReportStatus("Updating pip...");
-            progressReporter?.ReportProgress(10);
+            progressReporter?.ReportProgress(20);
             await ProcessHelper.ExecuteCommand("python", "-m pip install --upgrade pip");
             
             progressReporter?.ReportStatus("Installing Poetry using pip...");
-            progressReporter?.ReportProgress(30);
+            progressReporter?.ReportProgress(40);
             var success = await ProcessHelper.ExecuteCommand("pip", "install poetry");
 
             if (success)
             {
                 // Find where poetry.exe was installed and add Scripts dir to PATH
                 progressReporter?.ReportStatus("Adding Python Scripts directory to PATH...");
-                progressReporter?.ReportProgress(60);
+                progressReporter?.ReportProgress(70);
                 var poetryPath = await FindPoetryExecutable();
                 if (poetryPath != null)
                 {
@@ -132,7 +155,11 @@ public class PoetryInstaller : IInstaller
             catch { /* permission denied etc. */ }
         }
 
-        // 3. Check %APPDATA%\Python\Scripts and %APPDATA%\Python\Python3xx\Scripts
+        // 3. Check %APPDATA%\pypoetry\venv\Scripts (official Poetry installer location)
+        var pypoetryVenv = Path.Combine(appData, "pypoetry", "venv", "Scripts", "poetry.exe");
+        if (File.Exists(pypoetryVenv)) return pypoetryVenv;
+
+        // 4. Check %APPDATA%\Python\Scripts and %APPDATA%\Python\Python3xx\Scripts
         var appDataPythonScripts = Path.Combine(appData, "Python", "Scripts", "poetry.exe");
         if (File.Exists(appDataPythonScripts)) return appDataPythonScripts;
 
@@ -150,7 +177,7 @@ public class PoetryInstaller : IInstaller
             catch { /* permission denied */ }
         }
 
-        // 4. Check LocalAppData\Python\Python3xx\Scripts
+        // 5. Check LocalAppData\Python\Python3xx\Scripts
         var localAppDataPython = Path.Combine(localAppData, "Python");
         if (Directory.Exists(localAppDataPython))
         {

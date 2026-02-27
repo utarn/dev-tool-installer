@@ -25,6 +25,10 @@ public static class ToolRegistry
         new FontInstaller(),
         new PostmanInstaller(),
         new RustDeskInstaller(),
+        new ChromeInstaller(),
+        new BraveInstaller(),
+        new FirefoxInstaller(),
+        new OperaInstaller(),
         new WindowsExplorerSettingsInstaller(),
         new BrowserSettingsInstaller(),
         new WslConfigInstaller()

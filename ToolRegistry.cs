@@ -25,7 +25,8 @@ public static class ToolRegistry
         new OhMyPoshInstaller(),
         new FontInstaller(),
         new PostmanInstaller(),
-        new RustDeskInstaller()
+        new RustDeskInstaller(),
+        new WindowsExplorerSettingsInstaller()
     };
 
     public static async Task<List<MenuOption>> GetAllToolsAsync()

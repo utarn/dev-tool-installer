@@ -167,6 +167,19 @@ public class VSCodeInstaller : IInstaller
                 root[key] = value?.DeepClone();
             }
 
+            // Merge files.exclude – show .git objects by default
+            if (root["files.exclude"] is JsonObject existingExclude)
+            {
+                existingExclude["**/.git"] = false;
+            }
+            else
+            {
+                root["files.exclude"] = new JsonObject
+                {
+                    ["**/.git"] = false
+                };
+            }
+
             var writeOptions = new JsonSerializerOptions { WriteIndented = true };
             var updatedJson = root.ToJsonString(writeOptions);
             File.WriteAllText(settingsPath, updatedJson);

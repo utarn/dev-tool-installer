@@ -8,6 +8,15 @@ public class VSCodeInstaller : IInstaller
     private const string DownloadUrl = "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user";
     private const string InstallerFileName = "VSCodeSetup.exe";
 
+    /// <summary>
+    /// Extensions to uninstall (e.g., bloatware or unwanted pre-installed extensions).
+    /// </summary>
+    private static readonly string[] ExtensionsToUninstall =
+    [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+    ];
+
     private static readonly string[] Extensions =
     [
         // C# / .NET
@@ -198,6 +207,25 @@ public class VSCodeInstaller : IInstaller
 
     private async Task InstallExtensionsAsync(IProgressReporter? progressReporter = null)
     {
+        // Step 1: Uninstall unwanted extensions
+        if (ExtensionsToUninstall.Length > 0)
+        {
+            progressReporter?.ReportStatus("Removing unwanted VS Code extensions...");
+            foreach (var extension in ExtensionsToUninstall)
+            {
+                try
+                {
+                    progressReporter?.ReportStatus($"Uninstalling: {extension}");
+                    await ProcessHelper.GetCommandOutput("code", $"--uninstall-extension {extension}");
+                }
+                catch
+                {
+                    // Ignore if extension wasn't installed
+                }
+            }
+        }
+
+        // Step 2: Install desired extensions
         progressReporter?.ReportStatus("Installing VS Code extensions...");
         
         var totalExtensions = Extensions.Length;

@@ -10,6 +10,7 @@ public class VSCodeInstaller : IInstaller
 
     private static readonly string[] Extensions =
     [
+        // C# / .NET
         "modelharbor.modelharbor-agent",
         "ms-dotnettools.vscode-dotnet-runtime",
         "formulahendry.dotnet",
@@ -17,12 +18,40 @@ public class VSCodeInstaller : IInstaller
         "ms-dotnettools.csdevkit",
         "ms-dotnettools.vscodeintellicode-csharp",
         "alexcvzz.vscode-sqlite",
+        "kreativ-software.csharpextensions",
+
+        // Python / Jupyter
         "ms-python.python",
+        "ms-python.debugpy",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "charliermarsh.ruff",
+
+        // React / Next.js / Frontend
+        "dsznajder.es7-react-js-snippets",
+        "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "christian-kohler.npm-intellisense",
+        "mikestead.dotenv",
+
+        // Vue.js
+        "Vue.volar",
+
+        // Svelte
+        "svelte.svelte-vscode",
+
+        // General / Markdown / DevTools
         "PKief.material-icon-theme",
         "shd101wyy.markdown-preview-enhanced",
         "bierner.markdown-mermaid",
         "ms-vscode-remote.remote-ssh",
-        "sitoi.ai-commit"
+        "sitoi.ai-commit",
+        "eamodio.gitlens",
+        "usernamehw.errorlens",
+        "ms-azuretools.vscode-docker"
     ];
 
     /// <summary>

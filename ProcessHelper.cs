@@ -315,9 +315,15 @@ public static class ProcessHelper
             
             var process = new Process { StartInfo = startInfo };
             process.Start();
-            var output = process.StandardOutput.ReadToEnd();
+            
+            // Read stdout and stderr concurrently to prevent deadlocks
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
+            
+            await Task.WhenAll(outputTask, errorTask);
             process.WaitForExit();
 
+            var output = outputTask.Result;
             return process.ExitCode == 0 ? output : null;
         }
         catch

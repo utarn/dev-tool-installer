@@ -33,7 +33,7 @@ public class PowerShell7Installer : IInstaller
             {
                 progressReporter?.ReportStatus("Installing PowerShell 7 via winget...");
                 progressReporter?.ReportProgress(20);
-                var output = ProcessHelper.GetCommandOutput("winget",
+                var output = await ProcessHelper.GetCommandOutput("winget",
                     "install --id=Microsoft.PowerShell -e --source=winget --accept-source-agreements --accept-package-agreements --force");
 
                 if (output != null)

@@ -128,7 +128,7 @@ public class OhMyPoshInstaller : IInstaller
 
             if (terminalConfigured)
             {
-                progressReporter?.ReportSuccess("Windows Terminal configured (default shell: PowerShell 7, font: CaskaydiaCove Nerd Font)");
+                progressReporter?.ReportSuccess("Windows Terminal configured (default shell: PowerShell 7, font: CaskaydiaMono Nerd Font)");
             }
 
             return true;
@@ -203,7 +203,7 @@ public class OhMyPoshInstaller : IInstaller
             {
                 ["font"] = new JsonObject
                 {
-                    ["face"] = "CaskaydiaCove Nerd Font"
+                    ["face"] = "CaskaydiaMono Nerd Font"
                 },
                 ["opacity"] = 70,
                 ["useAcrylic"] = false

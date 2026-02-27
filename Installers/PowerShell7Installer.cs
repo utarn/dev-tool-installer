@@ -2,7 +2,7 @@ namespace DevToolInstaller.Installers;
 
 public class PowerShell7Installer : IInstaller
 {
-    private const string DownloadUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.4.5/PowerShell-7.4.5-win-x64.msi";
+    private const string DownloadUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.5.4/PowerShell-7.5.4-win-x64.msi";
     private const string InstallerFileName = "PowerShell7Setup.msi";
 
     public string Name => "PowerShell 7";

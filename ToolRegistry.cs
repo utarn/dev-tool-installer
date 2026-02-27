@@ -20,7 +20,6 @@ public static class ToolRegistry
         new NodeJs20Installer(),
         new NpmInstaller(),
         new NodeJsToolsInstaller(),
-        new FlowiseInstaller(),
         new OhMyPoshInstaller(),
         new FontInstaller(),
         new PostmanInstaller(),

@@ -125,14 +125,15 @@ public static class ProcessHelper
     {
         try
         {
-            var process = new Process
+            using var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "powershell.exe",
                     Arguments = $"-NoProfile -Command \"& '{scriptPath}' {arguments}\"",
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 }
             };
 
@@ -157,7 +158,7 @@ public static class ProcessHelper
     {
         try
         {
-            var process = new Process
+            using var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -166,7 +167,8 @@ public static class ProcessHelper
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 }
             };
 
@@ -186,7 +188,7 @@ public static class ProcessHelper
     {
         try
         {
-            var process = new Process
+            using var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -194,7 +196,8 @@ public static class ProcessHelper
                     Arguments = arguments,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    Verb = "runas"
+                    Verb = "runas",
+                    WorkingDirectory = Path.GetTempPath()
                 }
             };
 
@@ -219,14 +222,15 @@ public static class ProcessHelper
     {
         try
         {
-            var process = new Process
+            using var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
                     Arguments = $"/c start /wait msiexec.exe /i \"{msiPath}\" {arguments}",
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 }
             };
 
@@ -297,7 +301,8 @@ public static class ProcessHelper
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 };
             }
             else
@@ -309,11 +314,12 @@ public static class ProcessHelper
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 };
             }
             
-            var process = new Process { StartInfo = startInfo };
+            using var process = new Process { StartInfo = startInfo };
             process.Start();
             
             // Read stdout and stderr concurrently to prevent deadlocks
@@ -353,7 +359,8 @@ public static class ProcessHelper
                     FileName = "powershell.exe",
                     Arguments = $"-NoProfile -Command \"& '{commandPath}' {arguments}\"",
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 };
             }
             else
@@ -363,11 +370,12 @@ public static class ProcessHelper
                     FileName = commandPath,
                     Arguments = arguments,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
                 };
             }
 
-            var process = new Process { StartInfo = startInfo };
+            using var process = new Process { StartInfo = startInfo };
             process.Start();
             process.WaitForExit();
             return process.ExitCode == 0;

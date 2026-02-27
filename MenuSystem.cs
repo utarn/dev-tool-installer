@@ -99,7 +99,7 @@ public class MenuSystem : IDisposable
         catch (IOException) { windowWidth = 80; windowHeight = 24; }
 
         var width = Math.Min(90, windowWidth - 4);
-        var height = Math.Min(windowHeight - 2, windowHeight - 2);
+        var height = windowHeight;
         var startX = Math.Max(0, (windowWidth - width) / 2);
         var startY = 0;
 

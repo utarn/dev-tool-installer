@@ -1,6 +1,6 @@
 # DevToolInstaller
 
-A high-performance C# development environment setup tool for Windows that automatically installs and configures essential development tools with AOT (Ahead-of-Time) compilation support.
+A high-performance development environment setup tool for Windows that automatically installs and configures essential development tools with AOT (Ahead-of-Time) compilation support.
 
 ## Features
 
@@ -9,123 +9,124 @@ A high-performance C# development environment setup tool for Windows that automa
 - 📊 **Progress Tracking**: Visual feedback with download speed and percentage
 - 🎯 **Multiple Platforms**: Supports Windows x64 and ARM64
 - 🛠️ **Comprehensive Tool Suite**: Installs all essential development tools
+- 🎨 **TUI Menu**: Interactive category-based menu for selecting tools
 
 ## Installed Tools
 
-The installer automatically sets up:
+### C# Development
+| Tool | Description |
+|------|-------------|
+| .NET 10 SDK | Latest .NET development framework |
+| Visual Studio Code | Code editor with extensions and settings configuration |
 
-1. **.NET 8 SDK** - Latest .NET development framework
-2. **Visual Studio Code** - Code editor with essential extensions
-   - ModelHarbor Agent
-   - .NET Runtime
-   - .NET Tools
-   - C# DevKit
-   - IntelliCode for C#
-   - SQLite Viewer
-3. **Git** - Version control system
-4. **Windows Terminal** - Modern terminal application
-5. **PowerShell 7** - Latest PowerShell version
-6. **Docker Desktop** - Container platform (winget package: Docker.DockerDesktop)
-   - Automatically configured with optimal settings
-   - Pulls pgvector/pgvector:pg17 image
-   - Configured to start on boot
+### Python Development
+| Tool | Description |
+|------|-------------|
+| Python | Python runtime with PATH configuration |
+| pip | Python package manager |
+| Poetry | Python dependency management and packaging |
+| Visual C++ Build Tools | Required for compiling native Python packages |
+
+### Node.js Development
+| Tool | Description |
+|------|-------------|
+| NVM for Windows | Node Version Manager for managing multiple Node.js versions |
+| Node.js 20 | LTS Node.js runtime (via nvm) |
+| npm | Node.js package manager |
+| Node.js Tools | Global npm packages (yarn, pnpm, etc.) |
+| Flowise | Low-code AI workflow builder |
+
+### Cross-Platform Tools
+| Tool | Description |
+|------|-------------|
+| Git | Version control system |
+| Windows Terminal | Modern terminal application (via winget) |
+| PowerShell 7 | Latest PowerShell version |
+| Docker Desktop | Container platform with auto-configuration |
+| PostgreSQL | Relational database (via winget) |
+| Oh My Posh + Profile | Terminal theme engine with custom Paradox theme, PSReadLine, and Windows Terminal config |
+| Developer Fonts | CascadiaMono Nerd Font (downloaded) + TH Sarabun PSK (bundled) |
+| Postman | API platform for building, testing, and documenting APIs |
+| RustDesk | Open-source remote desktop client |
+
+### VS Code Extensions (auto-installed)
+
+| Extension | Description |
+|-----------|-------------|
+| `modelharbor.modelharbor-agent` | ModelHarbor Agent |
+| `ms-dotnettools.vscode-dotnet-runtime` | .NET Runtime |
+| `formulahendry.dotnet` | .NET Tools |
+| `ms-dotnettools.csharp` | C# language support |
+| `ms-dotnettools.csdevkit` | C# Dev Kit |
+| `ms-dotnettools.vscodeintellicode-csharp` | IntelliCode for C# |
+| `alexcvzz.vscode-sqlite` | SQLite Viewer |
+| `ms-python.python` | Python |
+| `PKief.material-icon-theme` | Material Icon Theme |
+| `shd101wyy.markdown-preview-enhanced` | Markdown Preview Enhanced |
+| `bierner.markdown-mermaid` | Markdown Mermaid diagrams |
+| `ms-vscode-remote.remote-ssh` | Remote SSH |
+| `sitoi.ai-commit` | AI Commit message generator |
+
+### VS Code Settings (auto-configured)
+
+| Setting | Value |
+|---------|-------|
+| `workbench.iconTheme` | `material-icon-theme` |
+| `editor.fontFamily` | `CaskaydiaCove Nerd Font` |
+| `editor.fontLigatures` | `true` |
+| `terminal.integrated.fontFamily` | `CaskaydiaCove Nerd Font` |
+| `terminal.integrated.scrollback` | `10000` |
+
+Settings are merged into `%APPDATA%\Code\User\settings.json` without removing existing user preferences.
 
 ## Building
 
 ### Prerequisites
 
-**IMPORTANT:** AOT (Native) compilation must be done on the target platform. You cannot cross-compile from macOS to Windows with AOT enabled.
-
-- .NET 9 SDK or later
+- .NET 10 SDK
 - **For AOT builds:** Must build on Windows (x64 or ARM64)
-- For non-AOT builds: Any platform with .NET 9 SDK
 
-### Build Scripts
+Install .NET 10 SDK:
+```powershell
+winget install Microsoft.DotNet.SDK.10
+```
 
-**On Windows (for AOT builds):**
+### Build Script
+
 ```powershell
 .\build.ps1
 ```
 
-The build script will create two native executables:
+This creates native executables:
 - `publish/win-x64/DevToolInstaller.exe` - For Windows x64
 - `publish/win-arm64/DevToolInstaller.exe` - For Windows ARM64
 
 ### Manual Build
 
-**On Windows for AOT compilation:**
+```powershell
+# Windows x64
+dotnet publish DevToolInstaller.csproj -c Release -r win-x64 --self-contained /p:PublishAot=true /p:StripSymbols=true
 
-Build for Windows x64:
-```bash
-dotnet publish -c Release -r win-x64 --self-contained -o publish/win-x64 /p:PublishAot=true
+# Windows ARM64
+dotnet publish DevToolInstaller.csproj -c Release -r win-arm64 --self-contained /p:PublishAot=true /p:StripSymbols=true
 ```
-
-Build for Windows ARM64:
-```bash
-dotnet publish -c Release -r win-arm64 --self-contained -o publish/win-arm64 /p:PublishAot=true
-```
-
-**On macOS/Linux (non-AOT, portable):**
-
-You can build a portable (non-AOT) version that will work on Windows:
-```bash
-dotnet publish -c Release -r win-x64 --self-contained -o publish/win-x64
-dotnet publish -c Release -r win-arm64 --self-contained -o publish/win-arm64
-```
-
-Note: These will be larger and slower than AOT builds but will work cross-platform.
 
 ## Usage
 
 ### Running the Installer
 
-1. **Download** the appropriate executable for your system architecture
+1. Copy the entire `publish/win-x64/` folder to the target machine (includes exe + bundled files)
 2. **Run as Administrator** (right-click → "Run as Administrator")
-3. The installer will:
-   - Check for administrator privileges
-   - Detect already installed tools
-   - Download and install missing tools
-   - Display progress for each installation
-   - Configure tools with optimal settings
+3. Select tools from the interactive category menu
+4. The installer will download, install, and configure everything
 
-### Command Line Options
+### Bundled Files
 
-The installer runs interactively and will:
-- Prompt for confirmation if not running as Administrator
-- Skip tools that are already installed
-- Display real-time download progress
-- Show a summary of installations upon completion
+The exe requires these files alongside it:
+- `config/paradox.omp.json` - Oh My Posh custom theme
+- `font/THSARABUN_PSK.zip` - TH Sarabun PSK fonts
 
-### Installation Flow
-
-```
-DevToolInstaller.exe
-├── Administrator Check
-├── .NET 8 SDK
-│   ├── Check if installed
-│   ├── Download installer
-│   ├── Install silently
-│   └── Verify installation
-├── Visual Studio Code
-│   ├── Check if installed
-│   ├── Download installer
-│   ├── Install silently
-│   └── Install extensions
-├── Git
-│   └── ...
-├── Windows Terminal
-│   └── (via winget)
-├── PowerShell 7
-│   └── ...
-├── Docker Desktop
-│   ├── Install
-│   ├── Configure settings
-│   ├── Enable auto-start
-│   ├── Pull pgvector image
-│   └── Start service
-└── Ngrok
-    └── ...
-```
+> **Note:** CascadiaMono Nerd Font is downloaded at runtime from GitHub releases (not bundled due to size).
 
 ## Architecture
 
@@ -134,101 +135,65 @@ DevToolInstaller.exe
 - **DownloadManager**: Handles multithreaded downloads with progress tracking
 - **ConsoleHelper**: Thread-safe console output with colored formatting
 - **ProcessHelper**: Manages process execution and tool detection
+- **MenuSystem**: Interactive TUI with category-based navigation
 - **IInstaller Interface**: Common interface for all tool installers
-- **Individual Installers**: Specialized installers for each tool
+- **ToolRegistry**: Central registry of all available installers
+
+### Categories
+
+| Category | Description |
+|----------|-------------|
+| C# Development | .NET SDK, VS Code |
+| Python Development | Python, pip, Poetry, VC++ Build Tools |
+| Node.js Development | NVM, Node.js, npm, tools, Flowise |
+| Cross-Platform Tools | Git, Terminal, Docker, PostgreSQL, fonts, etc. |
 
 ### AOT Compatibility
 
-The application is fully AOT-compatible:
-- Uses JSON source generation for Docker settings
+- Uses JSON source generation (`System.Text.Json.Nodes`)
 - No reflection-based serialization
-- All async methods properly structured
 - Native code generation for optimal performance
 
 ### Design Patterns
 
 - **Strategy Pattern**: Each installer implements `IInstaller`
-- **Factory Pattern**: Dynamic installer instantiation
 - **Async/Await**: Non-blocking I/O operations
 - **Thread-Safe**: Console output synchronization
-
-## Technical Details
-
-### Download System
-
-- Asynchronous HTTP downloads
-- 8KB buffer size for optimal performance
-- Real-time progress calculation
-- Download speed monitoring (MB/s)
-- Automatic retry and error handling
-
-### Progress Display
-
-```
-Progress: 45% (23.5 MB / 52.3 MB) - Speed: 8.32 MB/s
-```
-
-### Tool Detection
-
-- Checks PATH environment variable
-- Validates tool availability via command execution
-- Detects existing installations to avoid duplicates
+- **Merge-based Config**: VSCode/Terminal settings are merged, not overwritten
 
 ## System Requirements
 
 ### Target Systems
 - Windows 11 x64 or ARM64
-- Administrator privileges (recommended)
+- Administrator privileges (required for font installation, recommended for all)
 - Internet connection for downloads
 
 ### Development System
-- .NET 9 SDK
-- macOS M1/M2/M3 (for building)
-- Windows (for building)
-
-## Error Handling
-
-The installer includes comprehensive error handling:
-- Network timeout handling (30-minute timeout)
-- File access error management
-- Process execution error catching
-- Graceful degradation for non-critical failures
-- Detailed error messages with troubleshooting info
+- .NET 10 SDK
+- Windows (for AOT builds)
 
 ## Post-Installation
 
-After installation completes:
+After installation:
 1. **Restart your terminal** to refresh environment variables
-2. **Restart your computer** (optional, recommended for full effect)
-3. Verify installations:
-   ```bash
+2. **Restart your computer** (optional, recommended)
+3. Verify:
+   ```powershell
    dotnet --version
    code --version
    git --version
    pwsh --version
    docker --version
-   ngrok version
+   python --version
+   node --version
    ```
-
-## Contributing
-
-This project uses:
-- .NET 9 with AOT compilation
-- C# 12 language features
-- Modern async/await patterns
-- JSON source generation
-
-## License
-
-This project is provided as-is for development environment setup purposes.
 
 ## Troubleshooting
 
 ### Common Issues
 
 **"Not running as Administrator"**
-- Right-click the executable
-- Select "Run as Administrator"
+- Right-click the executable → "Run as Administrator"
 
 **"Tool already installed" but not detected**
 - Close and reopen your terminal
@@ -238,20 +203,13 @@ This project is provided as-is for development environment setup purposes.
 **Download failures**
 - Check internet connection
 - Verify firewall settings
-- Try running again (automatic retry)
+- Try running again
 
 **Docker Desktop issues**
 - Wait for Docker to fully start
-- Check Windows Subsystem for Linux (WSL2) is enabled
+- Check WSL2 is enabled
 - Verify virtualization is enabled in BIOS
 
-## Version History
+## License
 
-- **v1.0.0**: Initial release with AOT support and multithreaded downloads
-
-## Support
-
-For issues or questions, please check:
-1. Windows Event Viewer for installation errors
-2. Tool-specific documentation
-3. Ensure all prerequisites are met
+This project is provided as-is for development environment setup purposes.

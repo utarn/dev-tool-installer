@@ -123,7 +123,7 @@ public class VSCodeInstaller : IInstaller
     };
 
     public string Name => "Visual Studio Code";
-    public DevelopmentCategory Category => DevelopmentCategory.CSharp;
+    public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
     public string Description => "Lightweight but powerful source code editor with extensive extension support";
     public List<string> Dependencies => new();
 

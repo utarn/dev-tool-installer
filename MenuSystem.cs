@@ -6,14 +6,13 @@ public class MenuSystem : IDisposable
     public MenuState CurrentState { get; private set; } = MenuState.MainMenu;
     public int SelectedIndex { get; private set; } = 0;
     
-    private List<MenuOption> _allTools = new();
+    private List<CategoryGroup> _categories = new();
     private int _scrollOffset = 0;
     private IInstaller? _currentInstaller;
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     
     public async Task RunAsync()
     {
-        // Check if we're in a non-interactive environment
         bool isNonInteractive = false;
         try
         {
@@ -30,8 +29,8 @@ public class MenuSystem : IDisposable
             return;
         }
 
-        // Load all tools once at startup
-        _allTools = await ToolRegistry.GetAllToolsAsync();
+        // Load all tools and group by category
+        await LoadCategoriesAsync();
 
         ConsoleHelper.ClearScreen();
         
@@ -52,6 +51,27 @@ public class MenuSystem : IDisposable
         }
     }
 
+    private async Task LoadCategoriesAsync()
+    {
+        var allTools = await ToolRegistry.GetAllToolsAsync();
+        
+        var catDefs = new[]
+        {
+            (DevelopmentCategory.CSharp, "C# Development"),
+            (DevelopmentCategory.Python, "Python Development"),
+            (DevelopmentCategory.NodeJS, "Node.js Development"),
+            (DevelopmentCategory.CrossPlatform, "Cross-Platform Tools"),
+        };
+
+        _categories = new List<CategoryGroup>();
+        foreach (var (cat, label) in catDefs)
+        {
+            var tools = allTools.Where(t => t.Installer?.Category == cat).ToList();
+            if (tools.Count == 0) continue;
+            _categories.Add(new CategoryGroup { Name = label, Category = cat, Tools = tools });
+        }
+    }
+
     private async Task RenderCurrentStateAsync()
     {
         ConsoleHelper.ClearScreen();
@@ -59,7 +79,7 @@ public class MenuSystem : IDisposable
         switch (CurrentState)
         {
             case MenuState.MainMenu:
-                RenderToolList();
+                RenderCategoryList();
                 break;
             case MenuState.Installing:
                 await RenderInstallationProgressAsync();
@@ -67,9 +87,9 @@ public class MenuSystem : IDisposable
         }
     }
 
-    private void RenderToolList()
+    private void RenderCategoryList()
     {
-        SelectedIndex = Math.Clamp(SelectedIndex, 0, Math.Max(0, _allTools.Count - 1));
+        SelectedIndex = Math.Clamp(SelectedIndex, 0, Math.Max(0, _categories.Count - 1));
 
         int windowWidth, windowHeight;
         try { windowWidth = Console.WindowWidth; windowHeight = Console.WindowHeight; }
@@ -84,40 +104,34 @@ public class MenuSystem : IDisposable
 
         // Header
         ConsoleHelper.SetCursorPosition(startX + 2, startY + 2);
-        ConsoleHelper.WriteHeader("Select tools to install:");
+        ConsoleHelper.WriteHeader("Select categories to install:");
 
-        // Calculate visible area for tool items
-        var headerRows = 4; // top border + blank + header + blank
-        var footerRows = 4; // selected count + blank + help + bottom border
+        // Build display rows
+        var displayRows = BuildDisplayRows();
+
+        // Visible area
+        var headerRows = 4;
+        var footerRows = 4;
         var visibleCount = height - headerRows - footerRows;
         if (visibleCount < 1) visibleCount = 1;
 
-        // Adjust scroll offset to keep cursor visible
-        if (SelectedIndex < _scrollOffset)
-            _scrollOffset = SelectedIndex;
-        if (SelectedIndex >= _scrollOffset + visibleCount)
-            _scrollOffset = SelectedIndex - visibleCount + 1;
-
-        // Build display rows: group by category with headers
-        var displayRows = BuildDisplayRows();
-
-        // Map SelectedIndex (tool index) to display row index
+        // Find cursor display row (based on category index)
         int cursorDisplayRow = 0;
-        int toolIdx = 0;
+        int catIdx = 0;
         for (int r = 0; r < displayRows.Count; r++)
         {
-            if (displayRows[r].ToolOption != null)
+            if (displayRows[r].IsCategoryHeader)
             {
-                if (toolIdx == SelectedIndex)
+                if (catIdx == SelectedIndex)
                 {
                     cursorDisplayRow = r;
                     break;
                 }
-                toolIdx++;
+                catIdx++;
             }
         }
 
-        // Adjust scroll for display rows
+        // Scroll
         if (cursorDisplayRow < _scrollOffset)
             _scrollOffset = cursorDisplayRow;
         if (cursorDisplayRow >= _scrollOffset + visibleCount)
@@ -131,59 +145,95 @@ public class MenuSystem : IDisposable
             ConsoleHelper.SetCursorPosition(startX + 2, renderY);
             var row = displayRows[r];
 
-            if (row.IsCategoryHeader)
+            if (row.IsCategoryHeader && row.CategoryRef != null)
             {
-                // Category header
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                var label = $"── {row.Text} ──";
-                Console.Write(label);
+                bool isCursor = (r == cursorDisplayRow);
+                var checkbox = row.CategoryRef.IsSelected ? "[X]" : "[ ]";
+                var prefix = isCursor ? "> " : "  ";
+
+                if (isCursor)
+                {
+                    Console.BackgroundColor = ConsoleColor.Blue;
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else if (row.CategoryRef.IsSelected)
+                {
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                }
+
+                Console.Write($"{prefix}{checkbox} {row.Text}");
                 Console.ResetColor();
+
+                // Show tool count
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write($"  ({row.CategoryRef.Tools.Count} tools)");
+                Console.ResetColor();
+                Console.WriteLine();
             }
             else if (row.ToolOption != null)
             {
-                bool isCursor = (r == cursorDisplayRow);
-                ConsoleHelper.DrawCheckboxItem(
-                    row.ToolOption.Text,
-                    row.ToolOption.IsSelected,
-                    isCursor,
-                    row.ToolOption.IsInstalled);
-                // DrawCheckboxItem already writes newline, so we move back up
+                // Sub-item: indented, read-only display
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write("        ");
+                
+                if (row.ToolOption.IsInstalled)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.Write($"✓ {row.ToolOption.Text}");
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Console.Write($"  {row.ToolOption.Text}");
+                }
+                Console.ResetColor();
+                Console.WriteLine();
             }
 
             renderY++;
         }
 
-        // Scroll indicator
+        // Scroll indicators
         if (displayRows.Count > visibleCount)
         {
-            ConsoleHelper.SetCursorPosition(startX + width - 12, startY + headerRows);
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            if (_scrollOffset > 0) Console.Write("▲ scroll up");
-            Console.ResetColor();
-
-            ConsoleHelper.SetCursorPosition(startX + width - 14, startY + headerRows + visibleCount - 1);
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            if (_scrollOffset + visibleCount < displayRows.Count) Console.Write("▼ scroll down");
-            Console.ResetColor();
+            if (_scrollOffset > 0)
+            {
+                ConsoleHelper.SetCursorPosition(startX + width - 12, startY + headerRows);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write("▲ scroll up");
+                Console.ResetColor();
+            }
+            if (_scrollOffset + visibleCount < displayRows.Count)
+            {
+                ConsoleHelper.SetCursorPosition(startX + width - 14, startY + headerRows + visibleCount - 1);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write("▼ scroll down");
+                Console.ResetColor();
+            }
         }
 
         // Selected count
-        var selectedCount = _allTools.Count(o => o.IsSelected);
+        var selectedCount = _categories.Count(c => c.IsSelected);
+        var totalTools = _categories.Where(c => c.IsSelected).Sum(c => c.Tools.Count);
         ConsoleHelper.SetCursorPosition(startX + 4, startY + height - footerRows + 1);
         if (selectedCount > 0)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write($"{selectedCount} selected");
+            Console.Write($"{selectedCount} categories selected ({totalTools} tools)");
             Console.ResetColor();
         }
         else
         {
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Write("No tools selected");
+            Console.Write("No categories selected");
             Console.ResetColor();
         }
 
-        // Help text
+        // Help
         ConsoleHelper.SetCursorPosition(startX + 2, startY + height - 2);
         Console.ForegroundColor = ConsoleColor.Gray;
         Console.Write("[↑↓ Navigate] [Space Toggle] [A All] [Enter Install] [Esc Exit]");
@@ -193,26 +243,14 @@ public class MenuSystem : IDisposable
     private List<DisplayRow> BuildDisplayRows()
     {
         var rows = new List<DisplayRow>();
-        var categories = new[]
+        foreach (var cat in _categories)
         {
-            (DevelopmentCategory.CSharp, "C# Development"),
-            (DevelopmentCategory.Python, "Python Development"),
-            (DevelopmentCategory.NodeJS, "Node.js Development"),
-            (DevelopmentCategory.CrossPlatform, "Cross-Platform Tools"),
-        };
-
-        foreach (var (cat, label) in categories)
-        {
-            var tools = _allTools.Where(t => t.Installer?.Category == cat).ToList();
-            if (tools.Count == 0) continue;
-
-            rows.Add(new DisplayRow { Text = label, IsCategoryHeader = true });
-            foreach (var tool in tools)
+            rows.Add(new DisplayRow { Text = cat.Name, IsCategoryHeader = true, CategoryRef = cat });
+            foreach (var tool in cat.Tools)
             {
                 rows.Add(new DisplayRow { Text = tool.Text, ToolOption = tool });
             }
         }
-
         return rows;
     }
 
@@ -247,33 +285,24 @@ public class MenuSystem : IDisposable
         try
         {
             var success = await _currentInstaller.InstallAsync(progressReporter, _cancellationTokenSource.Token);
-            
             if (success)
                 progressReporter.ReportSuccess("Installation completed successfully!");
             else
                 progressReporter.ReportError("Installation failed!");
-
-            ConsoleHelper.SetCursorPosition(startX + 2, startY + 12);
-            ConsoleHelper.WriteInfo("Press any key to continue...");
-            try { Console.ReadKey(true); }
-            catch (InvalidOperationException) { await Task.Delay(2000); }
         }
         catch (OperationCanceledException)
         {
             progressReporter.ReportWarning("Installation cancelled!");
-            ConsoleHelper.SetCursorPosition(startX + 2, startY + 12);
-            ConsoleHelper.WriteInfo("Press any key to continue...");
-            try { Console.ReadKey(true); }
-            catch (InvalidOperationException) { await Task.Delay(2000); }
         }
         catch (Exception ex)
         {
             progressReporter.ReportError($"Error - {ex.Message}");
-            ConsoleHelper.SetCursorPosition(startX + 2, startY + 12);
-            ConsoleHelper.WriteInfo("Press any key to continue...");
-            try { Console.ReadKey(true); }
-            catch (InvalidOperationException) { await Task.Delay(2000); }
         }
+
+        ConsoleHelper.SetCursorPosition(startX + 2, startY + 12);
+        ConsoleHelper.WriteInfo("Press any key to continue...");
+        try { Console.ReadKey(true); }
+        catch (InvalidOperationException) { await Task.Delay(2000); }
         
         CurrentState = MenuState.MainMenu;
     }
@@ -285,27 +314,30 @@ public class MenuSystem : IDisposable
         catch (InvalidOperationException)
         {
             CurrentState = MenuState.Complete;
-            ConsoleHelper.WriteError("Console input not available. Exiting...");
-            await Task.Delay(2000);
             return;
         }
         
         switch (key.Key)
         {
             case ConsoleKey.UpArrow:
-                NavigateUp();
+                if (_categories.Count > 0)
+                    SelectedIndex = (SelectedIndex - 1 + _categories.Count) % _categories.Count;
                 break;
             case ConsoleKey.DownArrow:
-                NavigateDown();
+                if (_categories.Count > 0)
+                    SelectedIndex = (SelectedIndex + 1) % _categories.Count;
                 break;
             case ConsoleKey.Enter:
-                await SelectCurrentItem();
+                await InstallSelectedAsync();
                 break;
             case ConsoleKey.Spacebar:
-                ToggleCurrentItem();
+                if (SelectedIndex >= 0 && SelectedIndex < _categories.Count)
+                    _categories[SelectedIndex].IsSelected = !_categories[SelectedIndex].IsSelected;
                 break;
             case ConsoleKey.A:
-                ToggleAllItems();
+                var anyUnselected = _categories.Any(c => !c.IsSelected);
+                foreach (var cat in _categories)
+                    cat.IsSelected = anyUnselected;
                 break;
             case ConsoleKey.Escape:
                 CurrentState = MenuState.Complete;
@@ -317,88 +349,19 @@ public class MenuSystem : IDisposable
         }
     }
 
-    private void NavigateUp()
+    private async Task InstallSelectedAsync()
     {
-        if (_allTools.Count > 0)
-            SelectedIndex = (SelectedIndex - 1 + _allTools.Count) % _allTools.Count;
-    }
-
-    private void NavigateDown()
-    {
-        if (_allTools.Count > 0)
-            SelectedIndex = (SelectedIndex + 1) % _allTools.Count;
-    }
-
-    private async Task SelectCurrentItem()
-    {
-        if (CurrentState != MenuState.MainMenu) return;
-
-        var selectedItems = _allTools.Where(o => o.IsSelected && o.Installer != null).ToList();
-        if (selectedItems.Count > 0)
-        {
-            await BatchInstallSelectedAsync();
-        }
-        else if (SelectedIndex >= 0 && SelectedIndex < _allTools.Count && _allTools[SelectedIndex].Installer != null)
-        {
-            // Fallback: install current highlighted item
-            await InitiateInstallation(_allTools[SelectedIndex].Installer!);
-        }
-    }
-    
-    private async Task InitiateInstallation(IInstaller installer)
-    {
-        if (installer.Dependencies.Any())
-        {
-            foreach (var depName in installer.Dependencies)
-            {
-                var depInstaller = ToolRegistry.GetInstallerByName(depName);
-                if (depInstaller != null)
-                {
-                    var isInstalled = await depInstaller.IsInstalledAsync();
-                    if (!isInstalled)
-                    {
-                        ConsoleHelper.ClearScreen();
-                        ConsoleHelper.WriteError($"Dependency not met: '{depName}' is not installed.");
-                        ConsoleHelper.WriteInfo($"Please install '{depName}' before proceeding.");
-                        ConsoleHelper.WriteInfo("Press any key to continue...");
-                        try { Console.ReadKey(true); }
-                        catch (InvalidOperationException) { await Task.Delay(2000); }
-                        return;
-                    }
-                }
-            }
-        }
-
-        CurrentState = MenuState.Installing;
-        _currentInstaller = installer;
-    }
-
-    private void ToggleCurrentItem()
-    {
-        if (CurrentState == MenuState.MainMenu &&
-            SelectedIndex >= 0 && SelectedIndex < _allTools.Count)
-        {
-            _allTools[SelectedIndex].IsSelected = !_allTools[SelectedIndex].IsSelected;
-        }
-    }
-
-    private void ToggleAllItems()
-    {
-        if (CurrentState == MenuState.MainMenu)
-        {
-            var anyUnselected = _allTools.Any(o => !o.IsSelected);
-            foreach (var option in _allTools)
-                option.IsSelected = anyUnselected;
-        }
-    }
-
-    private async Task BatchInstallSelectedAsync()
-    {
-        var itemsToInstall = _allTools
-            .Where(o => o.IsSelected && o.Installer != null)
+        var itemsToInstall = _categories
+            .Where(c => c.IsSelected)
+            .SelectMany(c => c.Tools)
+            .Where(t => t.Installer != null)
             .ToList();
 
-        if (itemsToInstall.Count == 0) return;
+        if (itemsToInstall.Count == 0)
+        {
+            // Nothing selected — install nothing
+            return;
+        }
 
         int windowWidth, windowHeight;
         try { windowWidth = Console.WindowWidth; windowHeight = Console.WindowHeight; }
@@ -461,7 +424,7 @@ public class MenuSystem : IDisposable
                 await Task.Delay(1500);
         }
 
-        // Show summary
+        // Summary
         ConsoleHelper.ClearScreen();
         var summaryHeight = 10;
         var summaryY = Math.Max(0, (windowHeight - summaryHeight) / 2);
@@ -484,11 +447,11 @@ public class MenuSystem : IDisposable
         try { Console.ReadKey(true); }
         catch (InvalidOperationException) { await Task.Delay(2000); }
 
-        // Clear selections and refresh installed status
-        foreach (var option in _allTools)
-            option.IsSelected = false;
+        // Clear selections and refresh
+        foreach (var cat in _categories)
+            cat.IsSelected = false;
 
-        _allTools = await ToolRegistry.GetAllToolsAsync();
+        await LoadCategoriesAsync();
     }
 
     public void Dispose()
@@ -498,12 +461,23 @@ public class MenuSystem : IDisposable
 }
 
 /// <summary>
-/// Represents a single row in the flat tool list display.
-/// Can be a category header (non-selectable) or a tool item.
+/// A group of tools under a single development category.
+/// </summary>
+internal class CategoryGroup
+{
+    public string Name { get; set; } = "";
+    public DevelopmentCategory Category { get; set; }
+    public List<MenuOption> Tools { get; set; } = new();
+    public bool IsSelected { get; set; }
+}
+
+/// <summary>
+/// A single row in the display list — either a category header or a sub-item tool.
 /// </summary>
 internal class DisplayRow
 {
     public string Text { get; set; } = "";
     public bool IsCategoryHeader { get; set; }
+    public CategoryGroup? CategoryRef { get; set; }
     public MenuOption? ToolOption { get; set; }
 }

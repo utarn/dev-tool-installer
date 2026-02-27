@@ -257,23 +257,29 @@ public static class ProcessHelper
         {
             ConsoleHelper.WriteInfo("Refreshing environment variables...");
 
-            // Refresh environment variables from the machine level
+            // Refresh non-PATH environment variables from the machine level
             foreach (System.Collections.DictionaryEntry env in Environment.GetEnvironmentVariables(EnvironmentVariableTarget.Machine))
             {
-                if (env.Key != null)
+                if (env.Key != null && !string.Equals(env.Key.ToString(), "PATH", StringComparison.OrdinalIgnoreCase))
                 {
                     Environment.SetEnvironmentVariable(env.Key.ToString()!, env.Value?.ToString(), EnvironmentVariableTarget.Process);
                 }
             }
 
-            // Refresh environment variables from the user level
+            // Refresh non-PATH environment variables from the user level (user overrides machine)
             foreach (System.Collections.DictionaryEntry env in Environment.GetEnvironmentVariables(EnvironmentVariableTarget.User))
             {
-                if (env.Key != null)
+                if (env.Key != null && !string.Equals(env.Key.ToString(), "PATH", StringComparison.OrdinalIgnoreCase))
                 {
                     Environment.SetEnvironmentVariable(env.Key.ToString()!, env.Value?.ToString(), EnvironmentVariableTarget.Process);
                 }
             }
+
+            // Merge PATH: Machine PATH + User PATH (not overwrite)
+            var machinePath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine) ?? "";
+            var userPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
+            var mergedPath = string.IsNullOrEmpty(userPath) ? machinePath : machinePath + Path.PathSeparator + userPath;
+            Environment.SetEnvironmentVariable("PATH", mergedPath, EnvironmentVariableTarget.Process);
             
             ConsoleHelper.WriteSuccess("Environment variables refreshed.");
         }

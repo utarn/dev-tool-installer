@@ -19,6 +19,21 @@ public class RustDeskInstaller : IInstaller
             return true;
         }
 
+        // Check common install locations
+        var possiblePaths = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "RustDesk", "rustdesk.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "RustDesk", "rustdesk.exe"),
+        };
+
+        foreach (var path in possiblePaths)
+        {
+            if (File.Exists(path))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 

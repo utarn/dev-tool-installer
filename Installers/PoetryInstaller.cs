@@ -13,6 +13,39 @@ public class PoetryInstaller : IInstaller
         {
             return true;
         }
+
+        // Check common Python Scripts directories where pip installs executables
+        var searchBases = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "Python"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Python"),
+            @"C:\Python",
+        };
+
+        foreach (var basePath in searchBases)
+        {
+            if (!Directory.Exists(basePath)) continue;
+            try
+            {
+                foreach (var pyDir in Directory.GetDirectories(basePath, "Python*"))
+                {
+                    if (File.Exists(Path.Combine(pyDir, "Scripts", "poetry.exe")))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch { /* permission denied etc. */ }
+        }
+
+        // Also check user-level pip install location
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var userScripts = Path.Combine(appData, "Python", "Scripts", "poetry.exe");
+        if (File.Exists(userScripts))
+        {
+            return true;
+        }
+
         return false;
     }
 

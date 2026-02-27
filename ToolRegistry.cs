@@ -15,6 +15,7 @@ public static class ToolRegistry
         new PythonInstaller(),
         new PipInstaller(),
         new PoetryInstaller(),
+        new UvInstaller(),
         new VisualCppBuildToolsInstaller(),
         new NvmWindowsInstaller(),
         new NodeJs20Installer(),

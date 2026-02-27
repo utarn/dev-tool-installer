@@ -46,7 +46,7 @@ public class OhMyPoshInstaller : IInstaller
 
             if (!ompInstalled)
             {
-                if (ProcessHelper.IsToolInstalled("winget"))
+                if (await ProcessHelper.FindExecutableInPathAsync("winget"))
                 {
                     progressReporter?.ReportStatus("Installing Oh My Posh via winget...");
                     progressReporter?.ReportProgress(10);

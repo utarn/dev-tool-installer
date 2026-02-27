@@ -12,7 +12,7 @@ public class BrowserSettingsInstaller : IInstaller
 {
     public string Name => "Browser Privacy Settings";
     public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
-    public string Description => "Configure browsers: ask download location, disable background/analytics/startup boost/auto-update";
+    public string Description => "Configure browsers: ask download, disable background/analytics/startup boost, remove startup entries";
     public List<string> Dependencies => new();
 
     private static readonly (string Name, string PolicyPath)[] ChromiumBrowsers =
@@ -20,6 +20,7 @@ public class BrowserSettingsInstaller : IInstaller
         ("Google Chrome", @"SOFTWARE\Policies\Google\Chrome"),
         ("Microsoft Edge", @"SOFTWARE\Policies\Microsoft\Edge"),
         ("Brave", @"SOFTWARE\Policies\BraveSoftware\Brave"),
+        ("Opera", @"SOFTWARE\Policies\Opera Software\Opera"),
     ];
 
     /// <summary>
@@ -51,45 +52,12 @@ public class BrowserSettingsInstaller : IInstaller
         ("HardwareAccelerationModeEnabled", "Keep hardware acceleration enabled", 1),
     ];
 
+    /// <summary>
+    /// Always return false so browser settings are always applied/refreshed.
+    /// Registry policies should be idempotent — re-applying is safe and ensures settings stay correct.
+    /// </summary>
     public Task<bool> IsInstalledAsync()
     {
-        try
-        {
-            int configuredCount = 0;
-            int checkedCount = 0;
-
-            foreach (var (name, policyPath) in ChromiumBrowsers)
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(policyPath);
-                if (key == null) continue;
-
-                checkedCount++;
-                bool allSet = true;
-
-                foreach (var (settingKey, _, expectedValue) in PolicySettings)
-                {
-                    var val = key.GetValue(settingKey);
-                    if (val is not int intVal || intVal != expectedValue)
-                    {
-                        allSet = false;
-                        break;
-                    }
-                }
-
-                if (allSet) configuredCount++;
-            }
-
-            // Consider "installed" if we found at least one browser policy key and all are configured
-            if (checkedCount > 0 && configuredCount == checkedCount)
-            {
-                return Task.FromResult(true);
-            }
-        }
-        catch
-        {
-            // If we can't read registry, assume not configured
-        }
-
         return Task.FromResult(false);
     }
 

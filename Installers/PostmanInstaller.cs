@@ -14,8 +14,17 @@ public class PostmanInstaller : IInstaller
             return true;
         }
 
-        // Also check via winget list
-        if (ProcessHelper.IsToolInstalled("Postman"))
+        // Check common install locations (Postman installs to LocalAppData)
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var postmanPath = Path.Combine(localAppData, "Postman", "Postman.exe");
+        if (File.Exists(postmanPath))
+        {
+            return true;
+        }
+
+        // Also check Programs directory
+        var programsPath = Path.Combine(localAppData, "Programs", "Postman", "Postman.exe");
+        if (File.Exists(programsPath))
         {
             return true;
         }

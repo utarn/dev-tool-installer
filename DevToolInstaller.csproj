@@ -32,4 +32,12 @@
     </Content>
   </ItemGroup>
 
+  <!-- Bundle WireGuard installer for offline/fallback installation -->
+  <ItemGroup>
+    <Content Include="wireguard-installer.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

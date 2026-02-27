@@ -26,6 +26,7 @@ public static class ToolRegistry
         new NotepadPlusPlusInstaller(),
         new PostmanInstaller(),
         new RustDeskInstaller(),
+        new WireGuardInstaller(),
         new ChromeInstaller(),
         new BraveInstaller(),
         new FirefoxInstaller(),

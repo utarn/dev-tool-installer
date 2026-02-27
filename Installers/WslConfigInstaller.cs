@@ -45,15 +45,21 @@ public class WslConfigInstaller : IInstaller
 
     public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        progressReporter?.ReportStatus("Updating WSL...");
+        progressReporter?.ReportStatus("Installing/updating WSL...");
         progressReporter?.ReportProgress(5);
 
         try
         {
-            // Update WSL to latest version
+            // Step 1: Install WSL if not already enabled (no-distribution = don't install Ubuntu)
+            progressReporter?.ReportStatus("Enabling WSL2 (wsl --install --no-distribution)...");
+            await ProcessHelper.GetCommandOutput("wsl", "--install --no-distribution");
+            progressReporter?.ReportProgress(30);
+
+            // Step 2: Update WSL to latest version
+            progressReporter?.ReportStatus("Updating WSL to latest version...");
             await ProcessHelper.GetCommandOutput("wsl", "--update");
             progressReporter?.ReportStatus("WSL updated to latest version");
-            progressReporter?.ReportProgress(10);
+            progressReporter?.ReportProgress(40);
 
             // Build the config content
             var lines = new List<string>();
@@ -62,7 +68,7 @@ public class WslConfigInstaller : IInstaller
             {
                 // Read existing config and update/add settings
                 progressReporter?.ReportStatus("Reading existing .wslconfig...");
-                progressReporter?.ReportProgress(20);
+                progressReporter?.ReportProgress(50);
                 
                 var existingLines = File.ReadAllLines(WslConfigPath).ToList();
                 bool inWsl2Section = false;
@@ -144,7 +150,7 @@ public class WslConfigInstaller : IInstaller
             {
                 // Create new .wslconfig
                 progressReporter?.ReportStatus("Creating new .wslconfig...");
-                progressReporter?.ReportProgress(20);
+                progressReporter?.ReportProgress(50);
                 
                 lines.Add("[wsl2]");
                 lines.Add("memory=4GB");

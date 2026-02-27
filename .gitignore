@@ -482,3 +482,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Large font zip files (exceed GitHub 100MB limit)
+font/CaskaydiaMonoNerdFontPropo-Regular.zip
+font/CascadiaMono.zip

@@ -5,15 +5,15 @@ namespace DevToolInstaller.Installers;
 
 public class FontInstaller : IInstaller
 {
-    private static readonly string[] FontZipPaths =
-    [
-        Path.Combine(AppContext.BaseDirectory, "font", "CaskaydiaMonoNerdFontPropo-Regular.zip"),
-        Path.Combine(AppContext.BaseDirectory, "font", "THSARABUN_PSK.zip")
-    ];
+    private const string CascadiaMonoDownloadUrl =
+        "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/CascadiaMono.zip";
+
+    private static readonly string BundledThaiSarabunZip =
+        Path.Combine(AppContext.BaseDirectory, "font", "THSARABUN_PSK.zip");
 
     public string Name => "Developer Fonts";
     public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
-    public string Description => "Install bundled development fonts from zip files into Windows Fonts";
+    public string Description => "Download CascadiaMono Nerd Font and install bundled TH Sarabun into Windows Fonts";
     public List<string> Dependencies => new();
 
     public Task<bool> IsInstalledAsync()
@@ -24,7 +24,7 @@ public class FontInstaller : IInstaller
 
     public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        progressReporter?.ReportStatus("Installing bundled fonts...");
+        progressReporter?.ReportStatus("Installing fonts...");
         progressReporter?.ReportProgress(5);
 
         if (!IsRunningAsAdministrator())
@@ -39,24 +39,35 @@ public class FontInstaller : IInstaller
             return false;
         }
 
-        var missingZips = FontZipPaths.Where(path => !File.Exists(path)).ToList();
-        if (missingZips.Count > 0)
-        {
-            progressReporter?.ReportError($"Font zip file not found: {string.Join(", ", missingZips)}");
-            return false;
-        }
-
         var extractedDir = Path.Combine(Path.GetTempPath(), $"devtoolinstaller-fonts-{Guid.NewGuid():N}");
         Directory.CreateDirectory(extractedDir);
 
         try
         {
-            progressReporter?.ReportStatus("Extracting font archives...");
-            progressReporter?.ReportProgress(20);
+            // Step 1: Download CascadiaMono Nerd Font
+            var cascadiaZipPath = Path.Combine(Path.GetTempPath(), "CascadiaMono.zip");
+            progressReporter?.ReportStatus("Downloading CascadiaMono Nerd Font...");
+            progressReporter?.ReportProgress(10);
+            await DownloadManager.DownloadFileAsync(CascadiaMonoDownloadUrl, cascadiaZipPath, "CascadiaMono Nerd Font", progressReporter, cancellationToken);
 
-            foreach (var zipPath in FontZipPaths)
+            progressReporter?.ReportStatus("Extracting font archives...");
+            progressReporter?.ReportProgress(30);
+
+            ZipFile.ExtractToDirectory(cascadiaZipPath, extractedDir, overwriteFiles: true);
+
+            // Clean up downloaded zip
+            if (File.Exists(cascadiaZipPath))
+                File.Delete(cascadiaZipPath);
+
+            // Step 2: Extract bundled TH Sarabun
+            if (File.Exists(BundledThaiSarabunZip))
             {
-                ZipFile.ExtractToDirectory(zipPath, extractedDir, overwriteFiles: true);
+                progressReporter?.ReportStatus("Extracting TH Sarabun PSK fonts...");
+                ZipFile.ExtractToDirectory(BundledThaiSarabunZip, extractedDir, overwriteFiles: true);
+            }
+            else
+            {
+                progressReporter?.ReportWarning($"Bundled TH Sarabun zip not found: {BundledThaiSarabunZip}. Skipping.");
             }
 
             var fontFiles = Directory

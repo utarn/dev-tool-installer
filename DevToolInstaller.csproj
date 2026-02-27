@@ -25,4 +25,11 @@
     </Content>
   </ItemGroup>
 
+  <!-- Bundle TH Sarabun font (CascadiaMono is downloaded at runtime) -->
+  <ItemGroup>
+    <Content Include="font\THSARABUN_PSK.zip">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

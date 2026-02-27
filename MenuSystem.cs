@@ -149,14 +149,14 @@ public class MenuSystem : IDisposable
             {
                 ConsoleHelper.SetCursorPosition(startX + width - 12, startY + headerRowCount);
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write("▲ scroll up");
+                Console.Write("^ scroll up");
                 Console.ResetColor();
             }
             if (_scrollOffset + visibleCount < _displayRows.Count)
             {
                 ConsoleHelper.SetCursorPosition(startX + width - 14, startY + headerRowCount + visibleCount - 1);
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write("▼ scroll down");
+                Console.Write("v scroll down");
                 Console.ResetColor();
             }
         }
@@ -194,7 +194,7 @@ public class MenuSystem : IDisposable
         {
             ConsoleHelper.SetCursorPosition(startX + 4, startY + height - footerRowCount + 2);
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.Write("⚠ FORCE REINSTALL MODE — will reinstall already-installed tools");
+            Console.Write("! FORCE REINSTALL MODE -- will reinstall already-installed tools");
             Console.ResetColor();
         }
 
@@ -210,16 +210,16 @@ public class MenuSystem : IDisposable
         var selectedInCat = cat.Tools.Count(t => t.IsSelected);
         var totalInCat = cat.Tools.Count;
 
-        // Category checkbox: [■] all, [□] none, [◧] partial
+        // Category checkbox: [*] all, [ ] none, [~] partial
         string checkbox;
         if (selectedInCat == totalInCat)
-            checkbox = "[■]";
+            checkbox = "[*]";
         else if (selectedInCat == 0)
-            checkbox = "[□]";
+            checkbox = "[ ]";
         else
-            checkbox = "[◧]";
+            checkbox = "[~]";
 
-        var prefix = isCursor ? "▸ " : "  ";
+        var prefix = isCursor ? "> " : "  ";
 
         if (isCursor)
         {
@@ -260,8 +260,8 @@ public class MenuSystem : IDisposable
 
     private void RenderToolRow(MenuOption tool, bool isCursor)
     {
-        var toolCheckbox = tool.IsSelected ? "[✓]" : "[ ]";
-        var prefix = isCursor ? "    ▸ " : "      ";
+        var toolCheckbox = tool.IsSelected ? "[x]" : "[ ]";
+        var prefix = isCursor ? "    > " : "      ";
 
         // Prefix + checkbox
         if (isCursor || tool.IsSelected)
@@ -278,17 +278,17 @@ public class MenuSystem : IDisposable
         if (tool.Installer?.AlwaysRun == true)
         {
             Console.ForegroundColor = ConsoleColor.DarkCyan;
-            Console.Write("↻ ");
+            Console.Write("~ ");
         }
         else if (tool.IsInstalled)
         {
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write("✓ ");
+            Console.Write("+ ");
         }
         else
         {
             Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.Write("○ ");
+            Console.Write("- ");
         }
 
         // Tool name
@@ -557,7 +557,7 @@ public class MenuSystem : IDisposable
 
         ConsoleHelper.SetCursorPosition(startX + 4, boxY + 3);
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.Write("⚠ ");
+        Console.Write("! ");
         Console.ResetColor();
         Console.Write("A restart is recommended to apply all changes.");
 

@@ -7,6 +7,7 @@ public class MenuSystem : IDisposable
     public int SelectedIndex { get; private set; } = 0;
     
     private List<CategoryGroup> _categories = new();
+    private List<DisplayRow> _displayRows = new();
     private int _scrollOffset = 0;
     private IInstaller? _currentInstaller;
     private bool _forceReinstall = false;
@@ -90,7 +91,8 @@ public class MenuSystem : IDisposable
 
     private void RenderCategoryList()
     {
-        SelectedIndex = Math.Clamp(SelectedIndex, 0, Math.Max(0, _categories.Count - 1));
+        _displayRows = BuildDisplayRows();
+        SelectedIndex = Math.Clamp(SelectedIndex, 0, Math.Max(0, _displayRows.Count - 1));
 
         int windowWidth, windowHeight;
         try { windowWidth = Console.WindowWidth; windowHeight = Console.WindowHeight; }
@@ -105,164 +107,92 @@ public class MenuSystem : IDisposable
 
         // Header
         ConsoleHelper.SetCursorPosition(startX + 2, startY + 2);
-        ConsoleHelper.WriteHeader("Select categories to install:");
-
-        // Build display rows
-        var displayRows = BuildDisplayRows();
+        ConsoleHelper.WriteHeader("Select tools to install:");
 
         // Visible area
-        var headerRows = 4;
-        var footerRows = 4;
-        var visibleCount = height - headerRows - footerRows;
+        var headerRowCount = 4;
+        var footerRowCount = 4;
+        var visibleCount = height - headerRowCount - footerRowCount;
         if (visibleCount < 1) visibleCount = 1;
 
-        // Find cursor display row (based on category index)
-        int cursorDisplayRow = 0;
-        int catIdx = 0;
-        for (int r = 0; r < displayRows.Count; r++)
-        {
-            if (displayRows[r].IsCategoryHeader)
-            {
-                if (catIdx == SelectedIndex)
-                {
-                    cursorDisplayRow = r;
-                    break;
-                }
-                catIdx++;
-            }
-        }
-
-        // Scroll: place selected category header at top to maximize visible tools
-        _scrollOffset = cursorDisplayRow;
-        _scrollOffset = Math.Clamp(_scrollOffset, 0, Math.Max(0, displayRows.Count - visibleCount));
+        // Scroll: ensure selected row is visible
+        if (SelectedIndex < _scrollOffset)
+            _scrollOffset = SelectedIndex;
+        if (SelectedIndex >= _scrollOffset + visibleCount)
+            _scrollOffset = SelectedIndex - visibleCount + 1;
+        _scrollOffset = Math.Clamp(_scrollOffset, 0, Math.Max(0, _displayRows.Count - visibleCount));
 
         // Render visible rows
-        int renderY = startY + headerRows;
-        for (int r = _scrollOffset; r < Math.Min(_scrollOffset + visibleCount, displayRows.Count); r++)
+        int renderY = startY + headerRowCount;
+        for (int r = _scrollOffset; r < Math.Min(_scrollOffset + visibleCount, _displayRows.Count); r++)
         {
             ConsoleHelper.SetCursorPosition(startX + 2, renderY);
-            var row = displayRows[r];
+            var row = _displayRows[r];
+            bool isCursor = (r == SelectedIndex);
 
             if (row.IsCategoryHeader && row.CategoryRef != null)
             {
-                bool isCursor = (r == cursorDisplayRow);
-                var checkbox = row.CategoryRef.IsSelected ? "[X]" : "[ ]";
-                var prefix = isCursor ? "> " : "  ";
-
-                if (isCursor)
-                {
-                    Console.BackgroundColor = ConsoleColor.Blue;
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-                else if (row.CategoryRef.IsSelected)
-                {
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkYellow;
-                }
-
-                Console.Write($"{prefix}{checkbox} {row.Text}");
-                Console.ResetColor();
-
-                // Show tool count — pending vs total (exclude AlwaysRun from pending)
-                var pendingCount = row.CategoryRef.Tools.Count(t => !t.IsInstalled && !(t.Installer?.AlwaysRun == true));
-                var totalCount = row.CategoryRef.Tools.Count;
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-                if (_forceReinstall)
-                {
-                    Console.Write($"  ({totalCount} tools - force reinstall)");
-                }
-                else if (pendingCount == 0)
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.Write($"  (✓ all {totalCount} installed)");
-                }
-                else
-                {
-                    Console.Write($"  ({pendingCount} to install / {totalCount} total)");
-                }
-                Console.ResetColor();
-                Console.WriteLine();
+                RenderCategoryHeaderRow(row.CategoryRef, isCursor);
             }
             else if (row.ToolOption != null)
             {
-                // Sub-item: indented, read-only display
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write("        ");
-                
-                if (row.ToolOption.IsInstalled)
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.Write($"✓ {row.ToolOption.Text}");
-                }
-                else if (row.ToolOption.Installer?.AlwaysRun == true)
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkCyan;
-                    Console.Write($"↻ {row.ToolOption.Text}");
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.Gray;
-                    Console.Write($"  {row.ToolOption.Text}");
-                }
-                Console.ResetColor();
-                Console.WriteLine();
+                RenderToolRow(row.ToolOption, isCursor);
             }
 
             renderY++;
         }
 
         // Scroll indicators
-        if (displayRows.Count > visibleCount)
+        if (_displayRows.Count > visibleCount)
         {
             if (_scrollOffset > 0)
             {
-                ConsoleHelper.SetCursorPosition(startX + width - 12, startY + headerRows);
+                ConsoleHelper.SetCursorPosition(startX + width - 12, startY + headerRowCount);
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.Write("▲ scroll up");
                 Console.ResetColor();
             }
-            if (_scrollOffset + visibleCount < displayRows.Count)
+            if (_scrollOffset + visibleCount < _displayRows.Count)
             {
-                ConsoleHelper.SetCursorPosition(startX + width - 14, startY + headerRows + visibleCount - 1);
+                ConsoleHelper.SetCursorPosition(startX + width - 14, startY + headerRowCount + visibleCount - 1);
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.Write("▼ scroll down");
                 Console.ResetColor();
             }
         }
 
-        // Selected count
-        var selectedCount = _categories.Count(c => c.IsSelected);
-        var selectedCats = _categories.Where(c => c.IsSelected);
-        var pendingTools = selectedCats.Sum(c => c.Tools.Count(t => !t.IsInstalled && !(t.Installer?.AlwaysRun == true)));
-        var totalTools = selectedCats.Sum(c => c.Tools.Count);
-        ConsoleHelper.SetCursorPosition(startX + 4, startY + height - footerRows + 1);
-        if (selectedCount > 0)
+        // Selected count summary
+        var allTools = _categories.SelectMany(c => c.Tools);
+        var selectedTools = allTools.Where(t => t.IsSelected).ToList();
+        var selectedTotalCount = selectedTools.Count;
+        var allToolCount = allTools.Count();
+        var pendingToolCount = selectedTools.Count(t => !t.IsInstalled && !(t.Installer?.AlwaysRun == true));
+
+        ConsoleHelper.SetCursorPosition(startX + 4, startY + height - footerRowCount + 1);
+        if (selectedTotalCount > 0)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
             if (_forceReinstall)
             {
-                Console.Write($"{selectedCount} categories selected ({totalTools} tools - force reinstall)");
+                Console.Write($"{selectedTotalCount} tools selected ({selectedTotalCount} to reinstall / {allToolCount} total)");
             }
             else
             {
-                Console.Write($"{selectedCount} categories selected ({pendingTools} to install / {totalTools} total)");
+                Console.Write($"{selectedTotalCount} tools selected ({pendingToolCount} to install / {allToolCount} total)");
             }
             Console.ResetColor();
         }
         else
         {
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Write("No categories selected");
+            Console.Write("No tools selected");
             Console.ResetColor();
         }
 
         // Force reinstall indicator
         if (_forceReinstall)
         {
-            ConsoleHelper.SetCursorPosition(startX + 4, startY + height - footerRows + 2);
+            ConsoleHelper.SetCursorPosition(startX + 4, startY + height - footerRowCount + 2);
             Console.ForegroundColor = ConsoleColor.Red;
             Console.Write("⚠ FORCE REINSTALL MODE — will reinstall already-installed tools");
             Console.ResetColor();
@@ -272,6 +202,109 @@ public class MenuSystem : IDisposable
         ConsoleHelper.SetCursorPosition(startX + 2, startY + height - 2);
         Console.ForegroundColor = ConsoleColor.Gray;
         Console.Write("[↑↓ Navigate] [Space Toggle] [A All] [R Reinstall] [Enter Install] [Esc Exit]");
+        Console.ResetColor();
+    }
+
+    private void RenderCategoryHeaderRow(CategoryGroup cat, bool isCursor)
+    {
+        var selectedInCat = cat.Tools.Count(t => t.IsSelected);
+        var totalInCat = cat.Tools.Count;
+
+        // Category checkbox: [■] all, [□] none, [◧] partial
+        string checkbox;
+        if (selectedInCat == totalInCat)
+            checkbox = "[■]";
+        else if (selectedInCat == 0)
+            checkbox = "[□]";
+        else
+            checkbox = "[◧]";
+
+        var prefix = isCursor ? "▸ " : "  ";
+
+        if (isCursor)
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+        else if (selectedInCat == totalInCat)
+        {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+        }
+        else if (selectedInCat > 0)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkCyan;
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+        }
+
+        Console.Write($"{prefix}{checkbox} {cat.Name}");
+        Console.ResetColor();
+
+        // Show summary: (X selected / Y total)
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        if (_forceReinstall && selectedInCat > 0)
+        {
+            Console.Write($"  ({selectedInCat} selected / {totalInCat} total - force reinstall)");
+        }
+        else if (selectedInCat == 0)
+        {
+            Console.Write($"  ({totalInCat} tools)");
+        }
+        else
+        {
+            Console.Write($"  ({selectedInCat} selected / {totalInCat} total)");
+        }
+        Console.ResetColor();
+    }
+
+    private void RenderToolRow(MenuOption tool, bool isCursor)
+    {
+        var toolCheckbox = tool.IsSelected ? "[✓]" : "[ ]";
+        var prefix = isCursor ? "    ▸ " : "      ";
+
+        // Prefix + checkbox
+        if (isCursor || tool.IsSelected)
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+        }
+        Console.Write($"{prefix}{toolCheckbox} ");
+
+        // Status icon
+        if (tool.Installer?.AlwaysRun == true)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkCyan;
+            Console.Write("↻ ");
+        }
+        else if (tool.IsInstalled)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write("✓ ");
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.Write("○ ");
+        }
+
+        // Tool name
+        if (isCursor)
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+        else if (tool.IsInstalled)
+        {
+            Console.ForegroundColor = ConsoleColor.Gray;
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+        Console.Write(tool.Text);
         Console.ResetColor();
     }
 
@@ -355,24 +388,39 @@ public class MenuSystem : IDisposable
         switch (key.Key)
         {
             case ConsoleKey.UpArrow:
-                if (_categories.Count > 0)
-                    SelectedIndex = (SelectedIndex - 1 + _categories.Count) % _categories.Count;
+                if (_displayRows.Count > 0)
+                    SelectedIndex = (SelectedIndex - 1 + _displayRows.Count) % _displayRows.Count;
                 break;
             case ConsoleKey.DownArrow:
-                if (_categories.Count > 0)
-                    SelectedIndex = (SelectedIndex + 1) % _categories.Count;
+                if (_displayRows.Count > 0)
+                    SelectedIndex = (SelectedIndex + 1) % _displayRows.Count;
                 break;
             case ConsoleKey.Enter:
                 await InstallSelectedAsync();
                 break;
             case ConsoleKey.Spacebar:
-                if (SelectedIndex >= 0 && SelectedIndex < _categories.Count)
-                    _categories[SelectedIndex].IsSelected = !_categories[SelectedIndex].IsSelected;
+                if (SelectedIndex >= 0 && SelectedIndex < _displayRows.Count)
+                {
+                    var row = _displayRows[SelectedIndex];
+                    if (row.IsCategoryHeader && row.CategoryRef != null)
+                    {
+                        // Toggle all tools in this category
+                        var anyUnselected = row.CategoryRef.Tools.Any(t => !t.IsSelected);
+                        foreach (var tool in row.CategoryRef.Tools)
+                            tool.IsSelected = anyUnselected;
+                    }
+                    else if (row.ToolOption != null)
+                    {
+                        // Toggle individual tool
+                        row.ToolOption.IsSelected = !row.ToolOption.IsSelected;
+                    }
+                }
                 break;
             case ConsoleKey.A:
-                var anyUnselected = _categories.Any(c => !c.IsSelected);
-                foreach (var cat in _categories)
-                    cat.IsSelected = anyUnselected;
+                var allToolsList = _categories.SelectMany(c => c.Tools).ToList();
+                var anyToolUnselected = allToolsList.Any(t => !t.IsSelected);
+                foreach (var tool in allToolsList)
+                    tool.IsSelected = anyToolUnselected;
                 break;
             case ConsoleKey.R:
                 _forceReinstall = !_forceReinstall;
@@ -389,15 +437,15 @@ public class MenuSystem : IDisposable
 
     private async Task InstallSelectedAsync()
     {
+        // Collect individually selected tools that need installation
         var itemsToInstall = _categories
-            .Where(c => c.IsSelected)
             .SelectMany(c => c.Tools)
-            .Where(t => t.Installer != null && (_forceReinstall || !t.IsInstalled))
+            .Where(t => t.IsSelected && t.Installer != null && (_forceReinstall || !t.IsInstalled))
             .ToList();
 
         if (itemsToInstall.Count == 0)
         {
-            // Nothing to install — all selected tools are already installed or nothing selected
+            // Nothing to install — no tools selected or all selected tools already installed
             return;
         }
 
@@ -491,9 +539,10 @@ public class MenuSystem : IDisposable
             await PromptRestartComputerAsync(startX, width, windowHeight);
         }
 
-        // Clear selections and refresh
+        // Clear tool selections and refresh tool status
         foreach (var cat in _categories)
-            cat.IsSelected = false;
+            foreach (var tool in cat.Tools)
+                tool.IsSelected = false;
 
         await LoadCategoriesAsync();
     }
@@ -585,7 +634,6 @@ internal class CategoryGroup
     public string Name { get; set; } = "";
     public DevelopmentCategory Category { get; set; }
     public List<MenuOption> Tools { get; set; } = new();
-    public bool IsSelected { get; set; }
 }
 
 /// <summary>

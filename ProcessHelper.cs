@@ -88,6 +88,19 @@ public static class ProcessHelper
             searchPaths.AddRange(pathVariable.Split(Path.PathSeparator));
         }
 
+        // Also check registry PATH (Machine + User) which may differ from process PATH
+        var registryPath = GetRegistryPath();
+        if (!string.IsNullOrWhiteSpace(registryPath))
+        {
+            foreach (var rp in registryPath.Split(Path.PathSeparator))
+            {
+                if (!string.IsNullOrWhiteSpace(rp) && !searchPaths.Contains(rp))
+                {
+                    searchPaths.Add(rp);
+                }
+            }
+        }
+
         foreach (var path in searchPaths.Where(p => !string.IsNullOrWhiteSpace(p) && Directory.Exists(p)))
         {
             var fullPath = Path.Combine(path!, executableName);
@@ -247,6 +260,52 @@ public static class ProcessHelper
         catch (Exception ex)
         {
             ConsoleHelper.WriteError($"Failed to execute MSI installer: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets PATH from the Windows Registry directly (Machine + User), bypassing cached process environment.
+    /// This is important after installations that modify PATH — the process env may be stale.
+    /// </summary>
+    public static string GetRegistryPath()
+    {
+        var machinePath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine) ?? "";
+        var userPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
+        return machinePath + Path.PathSeparator + userPath;
+    }
+
+    /// <summary>
+    /// Uses 'where' command via cmd.exe to find an executable in the system PATH.
+    /// This can find executables that the process PATH doesn't see.
+    /// </summary>
+    public static async Task<bool> FindExecutableWithWhereAsync(string executableName)
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c where {executableName}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetTempPath()
+                }
+            };
+
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.StandardError.ReadToEndAsync();
+            process.WaitForExit();
+
+            return process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output);
+        }
+        catch
+        {
             return false;
         }
     }

@@ -23,7 +23,9 @@ public static class ToolRegistry
         new FlowiseInstaller(),
         new PostgreSQLInstaller(),
         new OhMyPoshInstaller(),
-        new FontInstaller()
+        new FontInstaller(),
+        new PostmanInstaller(),
+        new RustDeskInstaller()
     };
 
     public static async Task<List<MenuOption>> GetAllToolsAsync()

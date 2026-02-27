@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
 namespace DevToolInstaller.Installers;
 
 public class VSCodeInstaller : IInstaller
@@ -13,8 +16,27 @@ public class VSCodeInstaller : IInstaller
         "ms-dotnettools.csharp",
         "ms-dotnettools.csdevkit",
         "ms-dotnettools.vscodeintellicode-csharp",
-        "alexcvzz.vscode-sqlite"
+        "alexcvzz.vscode-sqlite",
+        "ms-python.python",
+        "PKief.material-icon-theme",
+        "shd101wyy.markdown-preview-enhanced",
+        "bierner.markdown-mermaid",
+        "ms-vscode-remote.remote-ssh",
+        "sitoi.ai-commit"
     ];
+
+    /// <summary>
+    /// VSCode user settings to apply. These will be merged into existing settings.json
+    /// without removing any existing user preferences.
+    /// </summary>
+    private static readonly Dictionary<string, JsonNode?> UserSettings = new()
+    {
+        ["workbench.iconTheme"] = JsonValue.Create("material-icon-theme"),
+        ["editor.fontFamily"] = JsonValue.Create("'CaskaydiaCove Nerd Font', Consolas, 'Courier New', monospace"),
+        ["editor.fontLigatures"] = JsonValue.Create(true),
+        ["terminal.integrated.fontFamily"] = JsonValue.Create("CaskaydiaCove Nerd Font"),
+        ["terminal.integrated.scrollback"] = JsonValue.Create(10000)
+    };
 
     public string Name => "Visual Studio Code";
     public DevelopmentCategory Category => DevelopmentCategory.CSharp;
@@ -53,10 +75,13 @@ public class VSCodeInstaller : IInstaller
             if (success)
             {
                 progressReporter?.ReportStatus("Installing extensions...");
-                progressReporter?.ReportProgress(90);
-                // Install extensions
+                progressReporter?.ReportProgress(85);
                 await InstallExtensionsAsync(progressReporter);
-                
+
+                progressReporter?.ReportStatus("Configuring VS Code settings...");
+                progressReporter?.ReportProgress(95);
+                ConfigureUserSettings(progressReporter);
+
                 progressReporter?.ReportProgress(100);
                 progressReporter?.ReportSuccess("Visual Studio Code installation completed successfully!");
                 return true;
@@ -97,5 +122,60 @@ public class VSCodeInstaller : IInstaller
         }
         
         progressReporter?.ReportSuccess("VS Code extensions installation completed!");
+    }
+
+    /// <summary>
+    /// Merges <see cref="UserSettings"/> into the VS Code user settings.json.
+    /// Preserves all existing settings and only adds/overwrites the keys defined above.
+    /// Path: %APPDATA%\Code\User\settings.json
+    /// </summary>
+    private static void ConfigureUserSettings(IProgressReporter? progressReporter)
+    {
+        try
+        {
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (string.IsNullOrWhiteSpace(appData))
+            {
+                progressReporter?.ReportWarning("Could not determine APPDATA path. Skipping VS Code settings.");
+                return;
+            }
+
+            var settingsDir = Path.Combine(appData, "Code", "User");
+            var settingsPath = Path.Combine(settingsDir, "settings.json");
+
+            JsonObject root;
+            if (File.Exists(settingsPath))
+            {
+                var jsonText = File.ReadAllText(settingsPath);
+                var parsed = JsonNode.Parse(jsonText, documentOptions: new JsonDocumentOptions
+                {
+                    CommentHandling = JsonCommentHandling.Skip,
+                    AllowTrailingCommas = true
+                });
+                root = parsed as JsonObject ?? new JsonObject();
+            }
+            else
+            {
+                if (!Directory.Exists(settingsDir))
+                    Directory.CreateDirectory(settingsDir);
+                root = new JsonObject();
+            }
+
+            // Merge settings – only set keys that are defined; leave everything else untouched
+            foreach (var (key, value) in UserSettings)
+            {
+                root[key] = value?.DeepClone();
+            }
+
+            var writeOptions = new JsonSerializerOptions { WriteIndented = true };
+            var updatedJson = root.ToJsonString(writeOptions);
+            File.WriteAllText(settingsPath, updatedJson);
+
+            progressReporter?.ReportStatus($"VS Code settings configured: {settingsPath}");
+        }
+        catch (Exception ex)
+        {
+            progressReporter?.ReportWarning($"Could not configure VS Code settings: {ex.Message}");
+        }
     }
 }

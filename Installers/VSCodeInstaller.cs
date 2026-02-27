@@ -31,11 +31,66 @@ public class VSCodeInstaller : IInstaller
     /// </summary>
     private static readonly Dictionary<string, JsonNode?> UserSettings = new()
     {
+        // Appearance
         ["workbench.iconTheme"] = JsonValue.Create("material-icon-theme"),
+
+        // Font
         ["editor.fontFamily"] = JsonValue.Create("'CaskaydiaCove Nerd Font', Consolas, 'Courier New', monospace"),
+        ["editor.fontSize"] = JsonValue.Create(14),
         ["editor.fontLigatures"] = JsonValue.Create(true),
+        ["editor.cursorSmoothCaretAnimation"] = JsonValue.Create("on"),
+        ["editor.cursorBlinking"] = JsonValue.Create("smooth"),
+
+        // Editor behavior
+        ["editor.formatOnSave"] = JsonValue.Create(true),
+        ["editor.formatOnPaste"] = JsonValue.Create(true),
+        ["editor.linkedEditing"] = JsonValue.Create(true),
+        ["editor.wordWrap"] = JsonValue.Create("on"),
+        ["editor.stickyScroll.enabled"] = JsonValue.Create(true),
+        ["editor.guides.bracketPairs"] = JsonValue.Create(true),
+        ["editor.bracketPairColorization.enabled"] = JsonValue.Create(true),
+        ["editor.minimap.enabled"] = JsonValue.Create(false),
+        ["editor.renderWhitespace"] = JsonValue.Create("boundary"),
+        ["editor.suggestSelection"] = JsonValue.Create("first"),
+        ["editor.acceptSuggestionOnCommitCharacter"] = JsonValue.Create(false),
+        ["editor.inlineSuggest.enabled"] = JsonValue.Create(true),
+        ["editor.tabSize"] = JsonValue.Create(2),
+        ["editor.detectIndentation"] = JsonValue.Create(true),
+        ["editor.smoothScrolling"] = JsonValue.Create(true),
+
+        // File handling
+        ["files.autoSave"] = JsonValue.Create("afterDelay"),
+        ["files.autoSaveDelay"] = JsonValue.Create(1000),
+        ["files.trimTrailingWhitespace"] = JsonValue.Create(true),
+        ["files.insertFinalNewline"] = JsonValue.Create(true),
+        ["files.trimFinalNewlines"] = JsonValue.Create(true),
+
+        // Explorer
+        ["explorer.confirmDelete"] = JsonValue.Create(false),
+        ["explorer.confirmDragAndDrop"] = JsonValue.Create(false),
+        ["explorer.compactFolders"] = JsonValue.Create(false),
+
+        // Terminal
         ["terminal.integrated.fontFamily"] = JsonValue.Create("CaskaydiaCove Nerd Font"),
-        ["terminal.integrated.scrollback"] = JsonValue.Create(10000)
+        ["terminal.integrated.fontSize"] = JsonValue.Create(13),
+        ["terminal.integrated.scrollback"] = JsonValue.Create(10000),
+        ["terminal.integrated.defaultProfile.windows"] = JsonValue.Create("PowerShell"),
+        ["terminal.integrated.smoothScrolling"] = JsonValue.Create(true),
+
+        // Git
+        ["git.autofetch"] = JsonValue.Create(true),
+        ["git.confirmSync"] = JsonValue.Create(false),
+        ["git.enableSmartCommit"] = JsonValue.Create(true),
+
+        // Workbench
+        ["workbench.editor.enablePreview"] = JsonValue.Create(false),
+        ["workbench.startupEditor"] = JsonValue.Create("none"),
+        ["workbench.list.smoothScrolling"] = JsonValue.Create(true),
+        ["workbench.tree.indent"] = JsonValue.Create(16),
+
+        // Breadcrumbs & search
+        ["breadcrumbs.enabled"] = JsonValue.Create(true),
+        ["search.smartCase"] = JsonValue.Create(true)
     };
 
     public string Name => "Visual Studio Code";

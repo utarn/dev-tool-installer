@@ -26,7 +26,8 @@ public static class ToolRegistry
         new FontInstaller(),
         new PostmanInstaller(),
         new RustDeskInstaller(),
-        new WindowsExplorerSettingsInstaller()
+        new WindowsExplorerSettingsInstaller(),
+        new BrowserSettingsInstaller()
     };
 
     public static async Task<List<MenuOption>> GetAllToolsAsync()

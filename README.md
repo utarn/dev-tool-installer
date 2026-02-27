@@ -8,12 +8,12 @@ A high-performance development environment setup tool for Windows that automatic
 - 🚀 **Multithreaded Downloads**: Parallel downloads with real-time progress display
 - 📊 **Progress Tracking**: Visual feedback with download speed and percentage
 - 🎯 **Category-based Selection**: Checkbox UI — select entire categories, batch install
-- 🛠️ **26 Tools**: Comprehensive development environment in one click
+- 🛠️ **27 Tools**: Comprehensive development environment in one click
 - 🎨 **31 VS Code Extensions**: Pre-configured for C#, Python, React, Vue, Svelte, and more
 - ⚙️ **40+ VS Code Settings**: Pro developer settings applied automatically
 - 🔒 **Browser Privacy Settings**: Chrome, Edge, Brave policies via Registry
 
-## Installed Tools (26 total)
+## Installed Tools (27 total)
 
 ### C# Development (1 tool)
 | Tool | Description |
@@ -37,7 +37,7 @@ A high-performance development environment setup tool for Windows that automatic
 | npm | Node.js package manager (updated to latest) |
 | Node.js Dev Tools | Global npm packages: pnpm, nodemon, express-generator, typescript, ts-node |
 
-### Cross-Platform Tools (16 tools)
+### Cross-Platform Tools (17 tools)
 | Tool | Description |
 |------|-------------|
 | Git | Version control system |
@@ -47,6 +47,7 @@ A high-performance development environment setup tool for Windows that automatic
 | Docker Desktop | Container platform with auto-configuration |
 | Oh My Posh + Profile | Terminal theme engine with custom Paradox theme, PSReadLine, and Windows Terminal config |
 | Developer Fonts | CascadiaMono Nerd Font (downloaded) + TH Sarabun PSK (bundled) |
+| Notepad++ | Free source code editor with syntax highlighting |
 | Postman | API platform for building, testing, and documenting APIs |
 | RustDesk | Open-source remote desktop client |
 | Google Chrome | Fast, secure web browser from Google |
@@ -174,7 +175,7 @@ The exe requires these files alongside it:
 | C# Development | .NET 10 SDK |
 | Python Development | Python, pip, Poetry, uv, VC++ Build Tools |
 | Node.js Development | NVM, Node.js 20, npm, Dev Tools (pnpm, nodemon, typescript, ts-node) |
-| Cross-Platform Tools | Git, VS Code, Terminal, PowerShell 7, Docker, Oh My Posh, Fonts, Postman, RustDesk, Chrome, Brave, Firefox, Opera, Explorer Settings, Browser Settings, WSL2 Config |
+| Cross-Platform Tools | Git, VS Code, Terminal, PowerShell 7, Docker, Oh My Posh, Fonts, Notepad++, Postman, RustDesk, Chrome, Brave, Firefox, Opera, Explorer Settings, Browser Settings, WSL2 Config |
 
 ### AOT Compatibility
 

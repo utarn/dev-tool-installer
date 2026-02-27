@@ -23,6 +23,7 @@ public static class ToolRegistry
         new NodeJsToolsInstaller(),
         new OhMyPoshInstaller(),
         new FontInstaller(),
+        new NotepadPlusPlusInstaller(),
         new PostmanInstaller(),
         new RustDeskInstaller(),
         new ChromeInstaller(),

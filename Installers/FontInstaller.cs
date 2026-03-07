@@ -10,9 +10,6 @@ public partial class FontInstaller : IInstaller
     private const string CascadiaMonoDownloadUrl =
         "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/CascadiaMono.zip";
 
-    private static readonly string BundledThaiSarabunZip =
-        Path.Combine(AppContext.BaseDirectory, "font", "THSARABUN_PSK.zip");
-
     /// <summary>Registry key where Windows stores installed font entries.</summary>
     private const string FontsRegistryKey = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts";
 
@@ -29,9 +26,9 @@ public partial class FontInstaller : IInstaller
     private const uint WM_FONTCHANGE = 0x001D;
     private const uint SMTO_ABORTIFHUNG = 0x0002;
 
-    public string Name => "Developer Fonts";
+    public string Name => "CascadiaMono Nerd Font";
     public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
-    public string Description => "Download CascadiaMono Nerd Font and install bundled TH Sarabun into Windows Fonts";
+    public string Description => "Download and install CascadiaMono Nerd Font for terminal and development use";
     public List<string> Dependencies => new();
     public bool AlwaysRun => true;
 
@@ -78,17 +75,6 @@ public partial class FontInstaller : IInstaller
             if (File.Exists(cascadiaZipPath))
                 File.Delete(cascadiaZipPath);
 
-            // Step 2: Extract bundled TH Sarabun
-            if (File.Exists(BundledThaiSarabunZip))
-            {
-                progressReporter?.ReportStatus("Extracting TH Sarabun PSK fonts...");
-                ZipFile.ExtractToDirectory(BundledThaiSarabunZip, extractedDir, overwriteFiles: true);
-            }
-            else
-            {
-                progressReporter?.ReportWarning($"Bundled TH Sarabun zip not found: {BundledThaiSarabunZip}. Skipping.");
-            }
-
             var fontFiles = Directory
                 .EnumerateFiles(extractedDir, "*.*", SearchOption.AllDirectories)
                 .Where(file =>
@@ -99,7 +85,7 @@ public partial class FontInstaller : IInstaller
 
             if (fontFiles.Count == 0)
             {
-                progressReporter?.ReportError("No .ttf or .otf files found inside font zip archives.");
+                progressReporter?.ReportError("No .ttf or .otf files found inside CascadiaMono zip archive.");
                 return false;
             }
 

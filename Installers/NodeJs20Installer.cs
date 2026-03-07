@@ -2,17 +2,31 @@ namespace DevToolInstaller.Installers;
 
 public class NodeJs20Installer : IInstaller
 {
-    private const string NodeVersion = "20.19.6";
+    // Fallback version if API call fails
+    private const string FallbackVersion = "20.19.6";
+    
+    private string _nodeVersion = string.Empty;
 
     public string Name => "Node.js 20";
     public DevelopmentCategory Category => DevelopmentCategory.NodeJS;
     public string Description => "Node.js 20 JavaScript runtime with npm included";
     public List<string> Dependencies => new() { "NVM for Windows" };
 
+    public NodeJs20Installer()
+    {
+        InitializeVersion();
+    }
+
+    private async void InitializeVersion()
+    {
+        var version = await VersionHelper.GetLatestNodeVersionAsync(20);
+        _nodeVersion = version ?? FallbackVersion;
+    }
+
     public async Task<bool> IsInstalledAsync()
     {
         var nvmList = await ProcessHelper.GetCommandOutput("nvm", "list");
-        if (string.IsNullOrWhiteSpace(nvmList) || !nvmList.Contains(NodeVersion))
+        if (string.IsNullOrWhiteSpace(nvmList) || !nvmList.Contains(_nodeVersion.TrimStart('v')))
         {
             return false;
         }
@@ -23,13 +37,21 @@ public class NodeJs20Installer : IInstaller
 
     public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
+        // Ensure version is initialized
+        if (string.IsNullOrEmpty(_nodeVersion))
+        {
+            InitializeVersion();
+            // Give it a moment to initialize
+            await Task.Delay(100);
+        }
+
         progressReporter?.ReportStatus("Installing Node.js 20 via nvm...");
 
         try
         {
-            progressReporter?.ReportStatus($"Installing Node.js {NodeVersion}...");
+            progressReporter?.ReportStatus($"Installing Node.js {_nodeVersion}...");
             progressReporter?.ReportProgress(40);
-            var installSuccess = await ProcessHelper.ExecuteCommand("nvm", $"install {NodeVersion}");
+            var installSuccess = await ProcessHelper.ExecuteCommand("nvm", $"install {_nodeVersion}");
 
             if (!installSuccess)
             {
@@ -37,9 +59,9 @@ public class NodeJs20Installer : IInstaller
                 return false;
             }
 
-            progressReporter?.ReportStatus($"Activating Node.js {NodeVersion}...");
+            progressReporter?.ReportStatus($"Activating Node.js {_nodeVersion}...");
             progressReporter?.ReportProgress(75);
-            var useSuccess = await ProcessHelper.ExecuteCommand("nvm", $"use {NodeVersion}");
+            var useSuccess = await ProcessHelper.ExecuteCommand("nvm", $"use {_nodeVersion}");
 
             if (!useSuccess)
             {
@@ -52,7 +74,7 @@ public class NodeJs20Installer : IInstaller
             ProcessHelper.RefreshEnvironmentVariables();
 
             progressReporter?.ReportProgress(100);
-            progressReporter?.ReportSuccess("Node.js 20 installation completed successfully!");
+            progressReporter?.ReportSuccess($"Node.js 20 ({_nodeVersion}) installation completed successfully!");
             return true;
         }
         catch (Exception ex)

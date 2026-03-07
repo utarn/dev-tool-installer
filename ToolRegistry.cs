@@ -6,23 +6,40 @@ public static class ToolRegistry
 {
     private static readonly List<IInstaller> _allInstallers = new()
     {
+        // .NET SDKs
         new DotNetSdk10Installer(),
+        new DotNetSdkInstaller(), // .NET 8
+        
+        // Cross-platform tools
         new VSCodeInstaller(),
         new GitInstaller(),
         new WindowsTerminalInstaller(),
         new PowerShell7Installer(),
         new DockerDesktopInstaller(),
+        
+        // Python ecosystem (uv first, then Python)
+        new UvInstaller(),
         new PythonInstaller(),
         new PipInstaller(),
         new PoetryInstaller(),
-        new UvInstaller(),
-        new VisualCppBuildToolsInstaller(),
+        
+        // Node.js ecosystem (NVM first, then Node versions)
         new NvmWindowsInstaller(),
         new NodeJs20Installer(),
+        new NodeJs22Installer(),
+        new NodeJs24Installer(),
         new NpmInstaller(),
         new NodeJsToolsInstaller(),
+        
+        // Development tools
+        new VisualCppBuildToolsInstaller(),
         new OhMyPoshInstaller(),
+        
+        // Fonts (CascadiaMono and Thai fonts separately)
         new FontInstaller(),
+        new ThaiFontInstaller(),
+        
+        // Other applications
         new NotepadPlusPlusInstaller(),
         new PostmanInstaller(),
         new RustDeskInstaller(),

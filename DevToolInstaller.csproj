@@ -18,16 +18,16 @@
     <FileVersion>2025.11.11.0</FileVersion>
   </PropertyGroup>
 
+  <!-- Exclude test project from compilation -->
+  <ItemGroup>
+    <Compile Remove="DevToolInstaller.Tests\**" />
+    <EmbeddedResource Remove="DevToolInstaller.Tests\**" />
+    <None Remove="DevToolInstaller.Tests\**" />
+  </ItemGroup>
+
   <!-- Bundle config files (oh-my-posh theme etc.) with the output -->
   <ItemGroup>
     <Content Include="config\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <!-- Bundle TH Sarabun font (CascadiaMono is downloaded at runtime) -->
-  <ItemGroup>
-    <Content Include="font\THSARABUN_PSK.zip">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

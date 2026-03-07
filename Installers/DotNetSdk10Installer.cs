@@ -4,8 +4,12 @@ namespace DevToolInstaller.Installers;
 
 public class DotNetSdk10Installer : IInstaller
 {
-    private string DownloadUrl = string.Empty;
-    private string InstallerFileName = string.Empty;
+    // Fallback version if API call fails
+    private const string FallbackVersion = "10.0.100";
+    
+    private string _downloadUrl = string.Empty;
+    private string _installerFileName = string.Empty;
+    private string _version = string.Empty;
 
     public string Name => ".NET 10 SDK";
     public DevelopmentCategory Category => DevelopmentCategory.CSharp;
@@ -17,18 +21,30 @@ public class DotNetSdk10Installer : IInstaller
         InitializeInstallerDetails();
     }
 
-    private void InitializeInstallerDetails()
+    private async void InitializeInstallerDetails()
     {
-        if (RuntimeInformation.OSArchitecture == Architecture.Arm64)
+        await InitializeVersionAsync();
+    }
+
+    private async Task InitializeVersionAsync()
+    {
+        var versionInfo = await VersionHelper.GetLatestDotNetSdkVersionAsync("10.0");
+        
+        if (versionInfo.HasValue)
         {
-            DownloadUrl = "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.100/dotnet-sdk-10.0.100-win-arm64.exe";
-            InstallerFileName = "dotnet-sdk-10.0.100-win-arm64.exe";
+            _version = versionInfo.Value.Version;
+            _downloadUrl = versionInfo.Value.DownloadUrl;
         }
-        else // Default to x64
+        else
         {
-            DownloadUrl = "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.100/dotnet-sdk-10.0.100-win-x64.exe";
-            InstallerFileName = "dotnet-sdk-10.0.100-win-x64.exe";
+            // Fallback to hardcoded version
+            _version = FallbackVersion;
+            var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "arm64" : "x64";
+            _downloadUrl = $"https://builds.dotnet.microsoft.com/dotnet/Sdk/{FallbackVersion}/dotnet-sdk-{FallbackVersion}-win-{arch}.exe";
         }
+        
+        var archSuffix = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "arm64" : "x64";
+        _installerFileName = $"dotnet-sdk-{_version}-win-{archSuffix}.exe";
     }
 
     public async Task<bool> IsInstalledAsync()
@@ -48,16 +64,22 @@ public class DotNetSdk10Installer : IInstaller
 
     public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
+        // Ensure version is initialized
+        if (string.IsNullOrEmpty(_downloadUrl))
+        {
+            await InitializeVersionAsync();
+        }
+
         progressReporter?.ReportStatus("Installing .NET 10 SDK...");
 
         var tempPath = Path.GetTempPath();
-        var installerPath = Path.Combine(tempPath, InstallerFileName);
+        var installerPath = Path.Combine(tempPath, _installerFileName);
 
         try
         {
-            progressReporter?.ReportStatus("Downloading .NET 10 SDK installer...");
+            progressReporter?.ReportStatus($"Downloading .NET 10 SDK {_version}...");
             progressReporter?.ReportProgress(10);
-            await DownloadManager.DownloadFileAsync(DownloadUrl, installerPath, Name, progressReporter, cancellationToken);
+            await DownloadManager.DownloadFileAsync(_downloadUrl, installerPath, Name, progressReporter, cancellationToken);
 
             progressReporter?.ReportStatus("Running .NET 10 SDK installer...");
             progressReporter?.ReportProgress(50);
@@ -76,7 +98,7 @@ public class DotNetSdk10Installer : IInstaller
                 progressReporter?.ReportProgress(95);
                 ProcessHelper.RefreshEnvironmentVariables();
                 progressReporter?.ReportProgress(100);
-                progressReporter?.ReportSuccess(".NET 10 SDK installation completed successfully!");
+                progressReporter?.ReportSuccess($".NET 10 SDK {_version} installation completed successfully!");
                 return true;
             }
             else

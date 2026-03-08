@@ -167,6 +167,7 @@ public class MenuSystem : IDisposable
         var selectedTotalCount = selectedTools.Count;
         var allToolCount = allTools.Count();
         var pendingToolCount = selectedTools.Count(t => !t.IsInstalled && !(t.Installer?.AlwaysRun == true));
+        var reinstallableToolCount = selectedTools.Count(t => t.IsInstalled && (_forceReinstall || t.Installer?.AlwaysRun == true));
 
         ConsoleHelper.SetCursorPosition(startX + 4, startY + height - footerRowCount + 1);
         if (selectedTotalCount > 0)
@@ -174,7 +175,7 @@ public class MenuSystem : IDisposable
             Console.ForegroundColor = ConsoleColor.Yellow;
             if (_forceReinstall)
             {
-                Console.Write($"{selectedTotalCount} tools selected ({selectedTotalCount} to reinstall / {allToolCount} total)");
+                Console.Write($"{selectedTotalCount} tools selected ({pendingToolCount + reinstallableToolCount} to process / {allToolCount} total)");
             }
             else
             {
@@ -208,14 +209,15 @@ public class MenuSystem : IDisposable
     private void RenderCategoryHeaderRow(CategoryGroup cat, bool isCursor)
     {
         var selectedInCat = cat.Tools.Count(t => t.IsSelected);
+        var selectableInCat = cat.Tools.Count(t => !t.IsInstalled || _forceReinstall || t.Installer?.AlwaysRun == true);
         var totalInCat = cat.Tools.Count;
 
-        // Category checkbox: [*] all, [ ] none, [~] partial
+        // Category checkbox: [*] all selectable selected, [ ] none selected, [~] partial selection
         string checkbox;
-        if (selectedInCat == totalInCat)
-            checkbox = "[*]";
-        else if (selectedInCat == 0)
+        if (selectedInCat == 0)
             checkbox = "[ ]";
+        else if (selectableInCat > 0 && selectedInCat == selectableInCat)
+            checkbox = "[*]";
         else
             checkbox = "[~]";
 
@@ -225,7 +227,7 @@ public class MenuSystem : IDisposable
         {
             Console.ForegroundColor = ConsoleColor.White;
         }
-        else if (selectedInCat == totalInCat)
+        else if (selectedInCat == selectableInCat && selectableInCat > 0)
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
         }
@@ -241,7 +243,7 @@ public class MenuSystem : IDisposable
         Console.Write($"{prefix}{checkbox} {cat.Name}");
         Console.ResetColor();
 
-        // Show summary: (X selected / Y total)
+        // Show summary: (X selected / Y total, Z installed)
         Console.ForegroundColor = ConsoleColor.DarkGray;
         if (_forceReinstall && selectedInCat > 0)
         {
@@ -249,20 +251,24 @@ public class MenuSystem : IDisposable
         }
         else if (selectedInCat == 0)
         {
-            Console.Write($"  ({totalInCat} tools)");
+            var installedCount = cat.Tools.Count(t => t.IsInstalled && t.Installer?.AlwaysRun != true);
+            Console.Write($"  ({totalInCat} tools, {installedCount} installed)");
         }
         else
         {
-            Console.Write($"  ({selectedInCat} selected / {totalInCat} total)");
+            var installedCount = cat.Tools.Count(t => t.IsInstalled && t.Installer?.AlwaysRun != true);
+            Console.Write($"  ({selectedInCat} selected / {totalInCat} total, {installedCount} installed)");
         }
         Console.ResetColor();
     }
 
     private void RenderToolRow(MenuOption tool, bool isCursor)
     {
-        var toolCheckbox = tool.IsSelected ? "[x]" : "[ ]";
+        // Determine if the tool can be selected (not installed or force reinstall mode)
+        bool canBeSelected = !tool.IsInstalled || _forceReinstall || tool.Installer?.AlwaysRun == true;
+        var toolCheckbox = tool.IsSelected ? (canBeSelected ? "[x]" : "[-]") : "[ ]";
         var prefix = isCursor ? "    > " : "      ";
-
+        
         // Prefix + checkbox
         if (isCursor || tool.IsSelected)
         {
@@ -273,7 +279,7 @@ public class MenuSystem : IDisposable
             Console.ForegroundColor = ConsoleColor.DarkGray;
         }
         Console.Write($"{prefix}{toolCheckbox} ");
-
+        
         // Status icon
         if (tool.Installer?.AlwaysRun == true)
         {
@@ -283,14 +289,14 @@ public class MenuSystem : IDisposable
         else if (tool.IsInstalled)
         {
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write("+ ");
+            Console.Write("- ");  // Show minus icon for installed tools
         }
         else
         {
             Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.Write("- ");
+            Console.Write("+ ");
         }
-
+        
         // Tool name
         if (isCursor)
         {
@@ -306,6 +312,14 @@ public class MenuSystem : IDisposable
         }
         Console.Write(tool.Text);
         Console.ResetColor();
+        
+        // Add "(installed)" indicator if not in force reinstall mode
+        if (tool.IsInstalled && !_forceReinstall && tool.Installer?.AlwaysRun != true)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.Write(" (installed)");
+            Console.ResetColor();
+        }
     }
 
     private List<DisplayRow> BuildDisplayRows()
@@ -405,14 +419,28 @@ public class MenuSystem : IDisposable
                     if (row.IsCategoryHeader && row.CategoryRef != null)
                     {
                         // Toggle all tools in this category
-                        var anyUnselected = row.CategoryRef.Tools.Any(t => !t.IsSelected);
+                        var anyUnselected = row.CategoryRef.Tools.Any(t => !t.IsSelected && (!t.IsInstalled || _forceReinstall || t.Installer?.AlwaysRun == true));
                         foreach (var tool in row.CategoryRef.Tools)
-                            tool.IsSelected = anyUnselected;
+                        {
+                            // Only allow selection if not installed or in force reinstall mode
+                            if (!tool.IsInstalled || _forceReinstall || tool.Installer?.AlwaysRun == true)
+                            {
+                                tool.IsSelected = anyUnselected;
+                            }
+                        }
                     }
                     else if (row.ToolOption != null)
                     {
-                        // Toggle individual tool
-                        row.ToolOption.IsSelected = !row.ToolOption.IsSelected;
+                        // Toggle individual tool only if not installed or in force reinstall mode
+                        if (!row.ToolOption.IsInstalled || _forceReinstall || row.ToolOption.Installer?.AlwaysRun == true)
+                        {
+                            row.ToolOption.IsSelected = !row.ToolOption.IsSelected;
+                        }
+                        else
+                        {
+                            // Play a beep sound to indicate the action is not allowed
+                            Console.Beep(500, 200);
+                        }
                     }
                 }
                 break;
@@ -440,7 +468,7 @@ public class MenuSystem : IDisposable
         // Collect individually selected tools that need installation
         var itemsToInstall = _categories
             .SelectMany(c => c.Tools)
-            .Where(t => t.IsSelected && t.Installer != null && (_forceReinstall || !t.IsInstalled))
+            .Where(t => t.IsSelected && t.Installer != null && (_forceReinstall || !t.IsInstalled || t.Installer.AlwaysRun))
             .ToList();
 
         if (itemsToInstall.Count == 0)

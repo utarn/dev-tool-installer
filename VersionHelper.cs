@@ -34,7 +34,9 @@ public static class VersionHelper
         var cacheKey = $"dotnet-{majorVersion}";
         if (TryGetFromCache(cacheKey, out var cached))
         {
-            return (cached.Version, cached.Version); // Return cached version (cache stores version only for non-dotnet)
+            // For .NET, we need to reconstruct the download URL from the cached version
+            var downloadUrl = $"https://builds.dotnet.microsoft.com/dotnet/Sdk/{cached.Version}/dotnet-sdk-{cached.Version}-win-{(RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "arm64" : "x64")}.exe";
+            return (cached.Version, downloadUrl); // Return cached version and reconstructed download URL
         }
 
         try
@@ -45,13 +47,53 @@ public static class VersionHelper
 
             var root = doc.RootElement;
             
-            // Get the latest release
-            if (root.TryGetProperty("latest-release", out var latestReleaseElement) &&
-                latestReleaseElement.TryGetProperty("sdk", out var sdkElement) &&
-                sdkElement.TryGetProperty("version", out var versionElement))
+            // Get the latest release - the structure may vary, try different approaches
+            string? version = null;
+            
+            // Try to get the latest release version from the JSON
+            // The API structure may have changed, so we'll handle different possible structures
+            if (root.TryGetProperty("latest-release", out var latestReleaseElement))
             {
-                var version = versionElement.GetString()!;
-                
+                if (latestReleaseElement.ValueKind == JsonValueKind.String)
+                {
+                    // If latest-release is a string, use it as the version
+                    version = latestReleaseElement.GetString();
+                }
+                else if (latestReleaseElement.ValueKind == JsonValueKind.Object)
+                {
+                    // If latest-release is an object with an sdk property
+                    if (latestReleaseElement.TryGetProperty("sdk", out var sdkElement))
+                    {
+                        if (sdkElement.TryGetProperty("version", out var versionElement))
+                        {
+                            version = versionElement.GetString();
+                        }
+                    }
+                }
+            }
+            
+            // Alternative approach: Look for releases array and get the first one
+            if (string.IsNullOrEmpty(version) && root.TryGetProperty("releases", out var releasesElement))
+            {
+                if (releasesElement.ValueKind == JsonValueKind.Array)
+                {
+                    var releasesArray = releasesElement.EnumerateArray();
+                    if (releasesArray.MoveNext())
+                    {
+                        var firstRelease = releasesArray.Current;
+                        if (firstRelease.TryGetProperty("sdk", out var firstSdkElement))
+                        {
+                            if (firstSdkElement.TryGetProperty("version", out var versionElement))
+                            {
+                                version = versionElement.GetString();
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (!string.IsNullOrEmpty(version))
+            {
                 // Determine architecture for download URL
                 var arch = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "arm64" : "x64";
                 var downloadUrl = $"https://builds.dotnet.microsoft.com/dotnet/Sdk/{version}/dotnet-sdk-{version}-win-{arch}.exe";

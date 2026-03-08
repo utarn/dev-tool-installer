@@ -40,18 +40,18 @@ public partial class FontInstaller : IInstaller
 
     public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            progressReporter?.ReportWarning("Font installation is only supported on Windows.");
+            return false;
+        }
+
         progressReporter?.ReportStatus("Installing fonts...");
         progressReporter?.ReportProgress(5);
 
         if (!IsRunningAsAdministrator())
         {
             progressReporter?.ReportError("Installing fonts requires Administrator privileges.");
-            return false;
-        }
-
-        if (!OperatingSystem.IsWindows())
-        {
-            progressReporter?.ReportWarning("Font installation is only supported on Windows.");
             return false;
         }
 

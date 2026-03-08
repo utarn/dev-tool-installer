@@ -52,14 +52,14 @@ public class ThaiFontInstaller : IInstaller
 
     public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
-        progressReporter?.ReportStatus("Installing Thai Fonts...");
-        progressReporter?.ReportProgress(5);
-
         if (!OperatingSystem.IsWindows())
         {
             progressReporter?.ReportWarning("Thai font installation is only supported on Windows.");
             return false;
         }
+
+        progressReporter?.ReportStatus("Installing Thai Fonts...");
+        progressReporter?.ReportProgress(5);
 
         if (!IsRunningAsAdministrator())
         {

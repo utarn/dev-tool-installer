@@ -1,44 +1,59 @@
-using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security.Principal;
+using Microsoft.Win32;
 
 namespace DevToolInstaller.Installers;
 
 public class ThaiFontInstaller : IInstaller
 {
-    // Local path to font-installer project (for development)
-    private const string FontInstallerLocalPath = @"C:\Users\utarn\projects\font-installer\FontInstaller\FontInstaller.Console\bin\Release\net8.0\win-x64\publish\FontInstaller.Console.exe";
-    
-    // GitHub releases URL for font-installer (for production)
-    private const string FontInstallerGitHubRepo = "utarn/font-installer";
+    /// <summary>Directory containing embedded Thai font TTF files, relative to the executable.</summary>
+    private const string ThaiFontDirectory = "font/thai";
+
+    /// <summary>Representative font file used to check if Thai fonts are already installed.</summary>
+    private const string RepresentativeFontFile = "THSarabunNew.ttf";
+
+    /// <summary>Registry key where Windows stores installed font entries.</summary>
+    private const string FontsRegistryKey = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts";
+
+    // Win32 APIs for immediate font registration (no reboot needed)
+    [DllImport("gdi32.dll", EntryPoint = "AddFontResourceW", CharSet = CharSet.Unicode)]
+    private static extern int AddFontResource(string lpFileName);
+
+    [DllImport("user32.dll", EntryPoint = "SendMessageTimeoutW")]
+    private static extern nint SendMessageTimeout(
+        nint hWnd, uint msg, nint wParam, nint lParam,
+        uint fuFlags, uint uTimeout, out nint lpdwResult);
+
+    private const nint HWND_BROADCAST = 0xFFFF;
+    private const uint WM_FONTCHANGE = 0x001D;
+    private const uint SMTO_ABORTIFHUNG = 0x0002;
 
     public string Name => "Thai Fonts";
     public DevelopmentCategory Category => DevelopmentCategory.CrossPlatform;
-    public string Description => "Install Thai fonts (TH Sarabun and other Thai font families) using the font-installer tool";
+    public string Description => "Install Thai fonts (TH Sarabun, Chakra Petch, KoHo, and other Thai font families)";
     public List<string> Dependencies => new();
     public bool AlwaysRun => false;
 
-    public async Task<bool> IsInstalledAsync()
+    public Task<bool> IsInstalledAsync()
     {
-        // Check if Thai fonts are installed by looking for common Thai font names in Windows Fonts
-        var windowsFontsDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Fonts");
-        
-        // Check for common Thai font files
-        var thaiFontPatterns = new[] { "THSarabun", "TH Sarabun", "THMali", "Kanit", "Prompt" };
-        
-        foreach (var pattern in thaiFontPatterns)
+        if (!OperatingSystem.IsWindows())
         {
-            var matchingFonts = Directory.GetFiles(windowsFontsDir, $"*{pattern}*", SearchOption.TopDirectoryOnly);
-            if (matchingFonts.Length > 0)
-            {
-                return true;
-            }
+            return Task.FromResult(false);
         }
-        
-        return false;
+
+        var windowsFontsDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+            "Fonts");
+
+        var representativeFont = Path.Combine(windowsFontsDir, RepresentativeFontFile);
+        return Task.FromResult(File.Exists(representativeFont));
     }
 
     public async Task<bool> InstallAsync(IProgressReporter? progressReporter = null, CancellationToken cancellationToken = default)
     {
         progressReporter?.ReportStatus("Installing Thai Fonts...");
+        progressReporter?.ReportProgress(5);
 
         if (!OperatingSystem.IsWindows())
         {
@@ -46,48 +61,100 @@ public class ThaiFontInstaller : IInstaller
             return false;
         }
 
+        if (!IsRunningAsAdministrator())
+        {
+            progressReporter?.ReportError("Installing fonts requires Administrator privileges.");
+            return false;
+        }
+
         try
         {
-            string fontInstallerPath = await FindOrDownloadFontInstallerAsync(progressReporter, cancellationToken);
-            
-            if (string.IsNullOrEmpty(fontInstallerPath) || !File.Exists(fontInstallerPath))
+            // Locate the embedded font directory relative to the executable
+            var fontSourceDir = Path.Combine(AppContext.BaseDirectory, ThaiFontDirectory);
+
+            if (!Directory.Exists(fontSourceDir))
             {
-                progressReporter?.ReportError("Font installer executable not found.");
+                progressReporter?.ReportError($"Thai font directory not found: {fontSourceDir}");
                 return false;
             }
 
-            progressReporter?.ReportStatus("Running Thai font installer...");
-            progressReporter?.ReportProgress(50);
+            var fontFiles = Directory
+                .EnumerateFiles(fontSourceDir, "*.ttf", SearchOption.TopDirectoryOnly)
+                .ToList();
 
-            // Run the font installer with --embedded flag to install embedded fonts
-            var startInfo = new ProcessStartInfo
+            if (fontFiles.Count == 0)
             {
-                FileName = fontInstallerPath,
-                Arguments = "--embedded",
-                UseShellExecute = true,
-                Verb = "runas", // Run as administrator
-                CreateNoWindow = false
-            };
-
-            using var process = new Process { StartInfo = startInfo };
-            process.Start();
-            
-            // Wait for the process to exit (with timeout)
-            var timeout = TimeSpan.FromMinutes(5);
-            var exited = await Task.Run(() => process.WaitForExit((int)timeout.TotalMilliseconds), cancellationToken);
-            
-            if (!exited)
-            {
-                progressReporter?.ReportWarning("Font installer is still running. Installation may continue in the background.");
+                progressReporter?.ReportError("No .ttf files found in the Thai font directory.");
+                return false;
             }
 
-            progressReporter?.ReportProgress(90);
-            
-            // Give the system a moment to register fonts
-            await Task.Delay(2000, cancellationToken);
+            var windowsFontsDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                "Fonts");
+
+            if (!Directory.Exists(windowsFontsDir))
+            {
+                progressReporter?.ReportError("Windows Fonts directory not found.");
+                return false;
+            }
+
+            // Open registry key for font registration (HKLM — requires admin)
+            using var fontsKey = Registry.LocalMachine.OpenSubKey(FontsRegistryKey, writable: true);
+            if (fontsKey == null)
+            {
+                progressReporter?.ReportWarning("Could not open Fonts registry key. Fonts will be copied but may need a restart.");
+            }
+
+            progressReporter?.ReportStatus($"Installing {fontFiles.Count} Thai font file(s)...");
+            progressReporter?.ReportProgress(10);
+            int copied = 0;
+            int skipped = 0;
+
+            foreach (var fontFile in fontFiles)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var fileName = Path.GetFileName(fontFile);
+                var targetPath = Path.Combine(windowsFontsDir, fileName);
+
+                // Skip if font already exists with the same file size
+                if (File.Exists(targetPath))
+                {
+                    var sourceInfo = new FileInfo(fontFile);
+                    var targetInfo = new FileInfo(targetPath);
+                    if (sourceInfo.Length == targetInfo.Length)
+                    {
+                        skipped++;
+                        var progress = 10 + (int)(80.0 * (copied + skipped) / fontFiles.Count);
+                        progressReporter?.ReportProgress(progress);
+                        continue;
+                    }
+                }
+
+                // Copy font file to Windows Fonts directory
+                File.Copy(fontFile, targetPath, overwrite: true);
+
+                // Register font in registry so Windows recognizes the font name
+                var fontName = Path.GetFileNameWithoutExtension(fileName);
+                fontsKey?.SetValue(fontName + " (TrueType)", fileName, RegistryValueKind.String);
+
+                // Notify GDI about the new font (makes it available immediately)
+                AddFontResource(targetPath);
+
+                copied++;
+
+                var prog = 10 + (int)(80.0 * (copied + skipped) / fontFiles.Count);
+                progressReporter?.ReportProgress(prog);
+            }
+
+            // Broadcast WM_FONTCHANGE so all applications pick up the new fonts
+            progressReporter?.ReportStatus("Broadcasting font change notification...");
+            SendMessageTimeout(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, SMTO_ABORTIFHUNG, 5000, out _);
 
             progressReporter?.ReportProgress(100);
-            progressReporter?.ReportSuccess("Thai font installation completed successfully!");
+
+            var message = $"Thai font installation completed. {copied} file(s) installed, {skipped} file(s) skipped (already up to date).";
+            progressReporter?.ReportSuccess(message);
             return true;
         }
         catch (OperationCanceledException)
@@ -102,70 +169,18 @@ public class ThaiFontInstaller : IInstaller
         }
     }
 
-    private async Task<string> FindOrDownloadFontInstallerAsync(IProgressReporter? progressReporter, CancellationToken cancellationToken)
+    [SupportedOSPlatform("windows")]
+    private static bool IsRunningAsAdministrator()
     {
-        // Strategy 1: Check local development path first
-        if (File.Exists(FontInstallerLocalPath))
-        {
-            progressReporter?.ReportStatus("Found font-installer in local development path.");
-            return FontInstallerLocalPath;
-        }
-
-        // Strategy 2: Check if font-installer is in PATH
-        var pathFontInstaller = await ProcessHelper.FindExecutablePathInPathAsync("FontInstaller.Console.exe");
-        if (!string.IsNullOrEmpty(pathFontInstaller))
-        {
-            progressReporter?.ReportStatus("Found font-installer in PATH.");
-            return pathFontInstaller;
-        }
-
-        // Strategy 3: Download from GitHub releases
-        progressReporter?.ReportStatus("Downloading font-installer from GitHub releases...");
-        progressReporter?.ReportProgress(10);
-
         try
         {
-            var downloadUrl = await VersionHelper.GetThaiFontInstallerUrlAsync();
-            if (string.IsNullOrEmpty(downloadUrl))
-            {
-                // Fallback: construct URL manually
-                downloadUrl = $"https://github.com/{FontInstallerGitHubRepo}/releases/latest/download/FontInstaller.Console.exe";
-            }
-
-            var tempPath = Path.GetTempPath();
-            var installerPath = Path.Combine(tempPath, "FontInstaller.Console.exe");
-
-            progressReporter?.ReportStatus($"Downloading from: {downloadUrl}");
-            await DownloadManager.DownloadFileAsync(downloadUrl, installerPath, "Font Installer", progressReporter, cancellationToken);
-
-            if (File.Exists(installerPath))
-            {
-                progressReporter?.ReportStatus("Font installer downloaded successfully.");
-                return installerPath;
-            }
+            var identity = WindowsIdentity.GetCurrent();
+            var principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
-        catch (Exception ex)
+        catch
         {
-            progressReporter?.ReportWarning($"Failed to download font-installer: {ex.Message}");
+            return false;
         }
-
-        // Strategy 4: Check for alternative local paths (macOS/Linux development)
-        var alternativePaths = new[]
-        {
-            "/Users/utarn/projects/font-installer/FontInstaller/FontInstaller.Console/dist/FontInstaller.Console",
-            "/Users/utarn/projects/font-installer/FontInstaller/FontInstaller.Console/bin/Release/net8.0/osx-arm64/publish/FontInstaller.Console",
-            Path.Combine(Path.GetTempPath(), "font-installer", "FontInstaller.Console.exe")
-        };
-
-        foreach (var altPath in alternativePaths)
-        {
-            if (File.Exists(altPath))
-            {
-                progressReporter?.ReportStatus($"Found font-installer at: {altPath}");
-                return altPath;
-            }
-        }
-
-        return string.Empty;
     }
 }

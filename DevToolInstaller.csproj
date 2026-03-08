@@ -32,6 +32,14 @@
     </Content>
   </ItemGroup>
 
+  <!-- Bundle Thai font TTF files for embedded font installation -->
+  <ItemGroup>
+    <Content Include="font\thai\**\*.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
   <!-- Bundle WireGuard installer for offline/fallback installation -->
   <ItemGroup>
     <Content Include="wireguard-installer.exe">

@@ -96,17 +96,17 @@ public class ThaiFontInstallerTests : IDisposable
     }
 
     [Fact]
-    public async Task IsInstalledAsync_ReturnsFalse_WhenThaiFontsNotFound()
+    public async Task IsInstalledAsync_ReturnsFalse_OnNonWindows()
     {
-        // Act & Assert - on macOS, this may throw due to Windows-specific code
-        // We just verify the method can be called
-        var exception = await Record.ExceptionAsync(async () => await _installer.IsInstalledAsync());
-        // Test passes regardless - on macOS it may throw, on Windows it returns false
-        Assert.NotNull(exception); // Expected on macOS due to Windows fonts directory access
+        // Act - on non-Windows, IsInstalledAsync returns false (no exception)
+        var result = await _installer.IsInstalledAsync();
+
+        // Assert
+        Assert.False(result);
     }
 
     [Fact]
-    public async Task InstallAsync_ReportsProgress_WhenInstalling()
+    public async Task InstallAsync_ReportsStatus_WhenInstalling()
     {
         // Arrange
         var cancellationToken = CancellationToken.None;
@@ -114,7 +114,7 @@ public class ThaiFontInstallerTests : IDisposable
         // Act
         var result = await _installer.InstallAsync(_progressMock.Object, cancellationToken);
 
-        // Assert
+        // Assert - should report initial status regardless of platform
         _progressMock.Verify(x => x.ReportStatus(It.IsAny<string>()), Times.AtLeastOnce);
     }
 
@@ -129,5 +129,26 @@ public class ThaiFontInstallerTests : IDisposable
 
         // Assert - returns false on non-Windows platforms
         Assert.False(result);
+    }
+
+    [Fact]
+    public async Task InstallAsync_ReportsWarning_OnNonWindows()
+    {
+        // Arrange
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        await _installer.InstallAsync(_progressMock.Object, cancellationToken);
+
+        // Assert - should report a warning about Windows-only support
+        _progressMock.Verify(x => x.ReportWarning(It.Is<string>(s => s.Contains("Windows"))), Times.Once);
+    }
+
+    [Fact]
+    public void Description_ContainsFontFamilyNames()
+    {
+        // Assert - description should mention key Thai font families
+        Assert.Contains("Sarabun", _installer.Description);
+        Assert.Contains("Chakra Petch", _installer.Description);
     }
 }
